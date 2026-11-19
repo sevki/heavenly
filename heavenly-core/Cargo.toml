@@ -1,0 +1,18 @@
+[package]
+name = "heavenly-core"
+version = "0.1.0"
+description = "Frames, epochs, state vectors and transforms for the heavenly coordinate library"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["std"]
+# Enables `std::error::Error` impls. Implies `alloc`.
+std = ["alloc"]
+# Enables the heap-backed `FrameGraph` resolver.
+alloc = []
+
+[dependencies]
+libm = "0.2"
