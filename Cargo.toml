@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = ["heavenly-core"]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/sevki/heavenly"
+rust-version = "1.70"
