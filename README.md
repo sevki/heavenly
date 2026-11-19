@@ -15,7 +15,7 @@ a lunar base or a spacecraft in transit.
 | Milestone | Crate | State |
 |-----------|-------|-------|
 | M1 — Core types and invariants | `heavenly-core` | implemented |
-| M2 — Earth and Moon | `heavenly-geo`, `heavenly-spice` | planned |
+| M2 — Earth and Moon | `heavenly-geo` (done), `heavenly-spice` | in progress |
 | M3 — Moving objects | `heavenly-orbit` | planned |
 | M4 — Local frames and identity | `heavenly-id` | planned |
 | M5 — Spatial and operational queries | `heavenly-topology` | planned |
@@ -56,6 +56,17 @@ frames.add_fixed(rack_frame, site, Transform::fixed(Rotation::IDENTITY, Vec3::ne
 let rack = FixedLocator { frame: rack_frame, position_m: Vec3::new(1.0, 2.0, 0.0) };
 let state = rack.state_at(epoch, site, &frames)?;
 ```
+
+## `heavenly-geo`
+
+* `Ellipsoid` (WGS84, GRS80, Moon, Mars) and `Geodetic` ↔ Cartesian, plus
+  local east-north-up frames for facilities.
+* `earth`: ITRF ↔ GCRF, within 7.6 mas (≈0.24 m) of SOFA's full IAU 2006/2000A
+  model, with caller-supplied EOP.
+* `iau`: IAU Moon and Mars rotation models, matching SPICE `pck00011` to < 0.02 mas.
+
+Every accuracy figure is checked in tests against SOFA- and SPICE-generated
+reference values (`heavenly-geo/tests/reference`).
 
 ## License
 

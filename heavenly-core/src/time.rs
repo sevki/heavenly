@@ -250,6 +250,20 @@ impl Epoch {
         }
     }
 
+    /// TAI − UTC in whole seconds at this instant (ΔAT). During an inserted
+    /// leap second the value before the leap applies.
+    pub fn tai_minus_utc_seconds(self) -> Result<i64, Error> {
+        let tai = self.tt_ns - TT_MINUS_TAI_NS;
+        LEAP_SECONDS
+            .iter()
+            .rev()
+            .find(|&&(y, m, d, dat)| {
+                naive_ns(days_from_civil(y, m, d), 0) + dat as i128 * NS <= tai
+            })
+            .map(|e| e.3)
+            .ok_or(Error::UtcOutOfRange)
+    }
+
     fn to_utc_calendar(self) -> Result<Calendar, Error> {
         let tai = self.tt_ns - TT_MINUS_TAI_NS;
         let tai_start = |i: usize| {

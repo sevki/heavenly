@@ -1,0 +1,18 @@
+[package]
+name = "heavenly-geo"
+version = "0.1.0"
+description = "Ellipsoids, geodetic coordinates and body orientation models for heavenly"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["std"]
+std = ["alloc", "heavenly-core/std"]
+# Enables helpers that register frames on a `heavenly_core::FrameGraph`.
+alloc = ["heavenly-core/alloc"]
+
+[dependencies]
+heavenly-core = { version = "0.1.0", path = "../heavenly-core", default-features = false }
+libm = "0.2"

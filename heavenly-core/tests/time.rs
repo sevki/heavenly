@@ -182,3 +182,15 @@ fn negative_and_ancient_dates() {
     let e = Epoch::J2000.add_seconds(-0.5).unwrap();
     assert_eq!(e.to_string(), "2000-01-01T11:59:59.5 TT");
 }
+
+#[test]
+fn tai_minus_utc() {
+    assert_eq!(p("2016-12-31T23:59:59Z").tai_minus_utc_seconds(), Ok(36));
+    assert_eq!(p("2016-12-31T23:59:60.5Z").tai_minus_utc_seconds(), Ok(36));
+    assert_eq!(p("2017-01-01T00:00:00Z").tai_minus_utc_seconds(), Ok(37));
+    assert_eq!(p("1972-01-01T00:00:00Z").tai_minus_utc_seconds(), Ok(10));
+    assert_eq!(
+        p("1971-12-31T23:59:59 TAI").tai_minus_utc_seconds(),
+        Err(Error::UtcOutOfRange)
+    );
+}

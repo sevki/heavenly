@@ -35,7 +35,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - run: cargo clippy -p heavenly-core --no-default-features -- -D warnings
+      - run: cargo clippy -p heavenly-core -p heavenly-geo --no-default-features -- -D warnings
 
   test:
     name: test (${{ matrix.os }})
@@ -49,7 +49,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --all-features
-      - run: cargo test -p heavenly-core --no-default-features --features alloc
+      - run: cargo test -p heavenly-core -p heavenly-geo --no-default-features --features alloc
 
   msrv:
     name: MSRV (1.70)
@@ -73,8 +73,8 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build -p heavenly-core --no-default-features --target ${{ matrix.target }}
-      - run: cargo build -p heavenly-core --no-default-features --features alloc --target ${{ matrix.target }}
+      - run: cargo build -p heavenly-core -p heavenly-geo --no-default-features --target ${{ matrix.target }}
+      - run: cargo build -p heavenly-core -p heavenly-geo --no-default-features --features alloc --target ${{ matrix.target }}
 
   examples:
     name: examples
@@ -87,10 +87,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in heavenly-core/examples/*.rs; do
+          for f in */examples/*.rs; do
+            crate=$(dirname "$(dirname "$f")")
             name=$(basename "$f" .rs)
-            echo "::group::$name"
-            cargo run -p heavenly-core --example "$name"
+            echo "::group::$crate/$name"
+            cargo run -p "$crate" --example "$name"
             echo "::endgroup::"
           done
 

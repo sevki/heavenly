@@ -36,6 +36,8 @@ pub enum Error {
     Parse(&'static str),
     /// A numeric input was NaN or infinite.
     NonFinite,
+    /// An input was outside its valid domain; the message names it.
+    InvalidInput(&'static str),
 }
 
 impl fmt::Display for Error {
@@ -66,6 +68,7 @@ impl fmt::Display for Error {
             Error::InvalidCalendar => f.write_str("invalid calendar date or time"),
             Error::Parse(msg) => write!(f, "invalid epoch string: {msg}"),
             Error::NonFinite => f.write_str("non-finite numeric input"),
+            Error::InvalidInput(what) => write!(f, "invalid input: {what}"),
         }
     }
 }
