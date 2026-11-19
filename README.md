@@ -7,7 +7,8 @@ a lunar base or a spacecraft in transit.
 > **Identity is stable; position is time-dependent; reference frames provide
 > meaning; placement topology is policy.**
 
-See [`docs/design.md`](docs/design.md) for the full design proposal.
+* **Book:** [`book/`](book/src/SUMMARY.md), built with mdbook (`mdbook serve book`). Published to GitHub Pages from `main`, with API docs under `/api/`.
+* **Design proposal:** [`docs/design.md`](docs/design.md).
 
 ## Status
 
@@ -34,7 +35,13 @@ See [`docs/design.md`](docs/design.md) for the full design proposal.
   `FixedLocator`, `LocationId`, `LocationRecord`.
 
 The crate is `no_std` with `--no-default-features`; `alloc` enables
-`FrameGraph`, `std` (default) adds `std::error::Error`.
+`FrameGraph`, `std` (default) adds `std::error::Error`. MSRV is Rust 1.70.
+
+## CI
+
+Every PR runs rustfmt, clippy (std and `no_std`), tests on Linux/macOS/Windows,
+the MSRV, bare-metal builds (`thumbv7em-none-eabihf`, `riscv32imac-unknown-none-elf`),
+every example, rustdoc with `-D warnings`, and the mdbook build.
 
 ```rust
 use heavenly_core::*;

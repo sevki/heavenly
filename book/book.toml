@@ -1,0 +1,13 @@
+[book]
+title = "Heavenly"
+description = "A universal spatiotemporal coordinate library for Rust"
+authors = ["The heavenly contributors"]
+language = "en"
+src = "src"
+
+[build]
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/sevki/heavenly"
+edit-url-template = "https://github.com/sevki/heavenly/edit/main/book/{path}"
