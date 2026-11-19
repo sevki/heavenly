@@ -18,6 +18,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "heavenly-spice"
+version = "0.1.0"
+dependencies = [
+ "heavenly-core",
+ "heavenly-geo",
+ "libm",
+]
+
+[[package]]
 name = "libm"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"

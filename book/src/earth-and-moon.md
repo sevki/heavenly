@@ -50,9 +50,9 @@ implement `EopProvider` to interpolate a published IERS series.
 constants copied from NAIF's `pck00011.tpc`. Angular velocity includes the
 pole motion and every periodic term.
 
-These are cartographic conventions, not dynamical ephemerides. For the Moon,
-use a SPICE binary PCK for metre-level work; that is the job of the planned
-`heavenly-spice` crate.
+These are cartographic conventions, not dynamical ephemerides. For metre-level
+lunar work, use the DE440 `MOON_PA` / `MOON_ME` frames from
+[`heavenly-spice`](spice.md) instead.
 
 ## Accuracy
 

@@ -1,0 +1,20 @@
+[package]
+name = "heavenly-spice"
+version = "0.1.0"
+description = "Reader for SPICE SPK and binary PCK kernels (JPL DE ephemerides) for heavenly"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["std"]
+# Enables `Spk::open` / `Pck::open` from a file path.
+std = ["heavenly-core/std"]
+
+[dependencies]
+heavenly-core = { version = "0.1.0", path = "../heavenly-core", default-features = false, features = ["alloc"] }
+libm = "0.2"
+
+[dev-dependencies]
+heavenly-geo = { path = "../heavenly-geo" }

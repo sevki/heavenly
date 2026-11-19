@@ -16,7 +16,7 @@ compares two positions unless they share a frame and an epoch.
 
 ## What exists today
 
-Milestone **M1** is complete and **M2** is in progress. The `heavenly-core` crate provides:
+Milestones **M1** and **M2** are complete. The `heavenly-core` crate provides:
 
 | Type | Purpose |
 |------|---------|
@@ -29,7 +29,9 @@ Milestone **M1** is complete and **M2** is in progress. The `heavenly-core` crat
 
 `heavenly-geo` adds ellipsoids, geodetic coordinates, Earth orientation
 (ITRF ↔ GCRF) and IAU Moon/Mars models. See
-[Earth, Moon and Mars](earth-and-moon.md).
+[Earth, Moon and Mars](earth-and-moon.md). `heavenly-spice` reads JPL
+ephemerides and lunar orientation from SPICE kernels. See
+[Ephemerides](spice.md).
 
 See the [roadmap](roadmap.md) for what comes next, and the
 [design proposal](design.md) for the full rationale.

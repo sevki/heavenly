@@ -15,7 +15,7 @@ a lunar base or a spacecraft in transit.
 | Milestone | Crate | State |
 |-----------|-------|-------|
 | M1 — Core types and invariants | `heavenly-core` | implemented |
-| M2 — Earth and Moon | `heavenly-geo` (done), `heavenly-spice` | in progress |
+| M2 — Earth and Moon | `heavenly-geo`, `heavenly-spice` | implemented |
 | M3 — Moving objects | `heavenly-orbit` | planned |
 | M4 — Local frames and identity | `heavenly-id` | planned |
 | M5 — Spatial and operational queries | `heavenly-topology` | planned |
@@ -67,6 +67,15 @@ let state = rack.state_at(epoch, site, &frames)?;
 
 Every accuracy figure is checked in tests against SOFA- and SPICE-generated
 reference values (`heavenly-geo/tests/reference`).
+
+## `heavenly-spice`
+
+* A dependency-free reader for SPICE SPK (types 2/3) and binary PCK (type 2)
+  kernels, both byte orders: JPL DE ephemerides and DE440 lunar orientation.
+* `frames::register_ephemeris` / `register_moon` connect `SSB_ICRF`, `GCRF`,
+  `MOON_ICRF`, `MOON_PA` and `MOON_ME` on a `FrameGraph`.
+* Reproduces SPICE to rounding on `de440s.bsp` (7e-5 m) and the lunar PCK
+  (5e-12 rad).
 
 ## License
 
