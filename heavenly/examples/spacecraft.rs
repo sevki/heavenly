@@ -1,7 +1,7 @@
 //! A spacecraft seen from a ground station, from elements and from samples.
-use heavenly_core::*;
-use heavenly_geo::{earth, Ellipsoid, Geodetic};
-use heavenly_orbit::{gm, ConicElements, SampledTrajectory, TwoBodyLocator};
+use heavenly::geo::{earth, Ellipsoid, Geodetic};
+use heavenly::orbit::{gm, ConicElements, SampledTrajectory, TwoBodyLocator};
+use heavenly::*;
 
 fn main() -> Result<(), Error> {
     // ANCHOR: spacecraft

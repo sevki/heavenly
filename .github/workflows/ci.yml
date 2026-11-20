@@ -35,7 +35,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - run: cargo clippy -p heavenly-core -p heavenly-geo -p heavenly-spice -p heavenly-orbit -p heavenly-id --no-default-features -- -D warnings
+      - run: cargo clippy -p heavenly -p heavenly-core -p heavenly-geo -p heavenly-spice -p heavenly-orbit -p heavenly-id -p heavenly-query -p heavenly-topology --no-default-features -- -D warnings
 
   test:
     name: test (${{ matrix.os }})
@@ -49,7 +49,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --all-features
-      - run: cargo test -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --features alloc
+      - run: cargo test -p heavenly-core -p heavenly-geo -p heavenly-orbit -p heavenly-query --no-default-features --features alloc
 
   msrv:
     name: MSRV (1.70)
@@ -75,7 +75,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo build -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --target ${{ matrix.target }}
       - run: cargo build -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --features alloc --target ${{ matrix.target }}
-      - run: cargo build -p heavenly-spice -p heavenly-id --no-default-features --target ${{ matrix.target }}
+      - run: cargo build -p heavenly-spice -p heavenly-id -p heavenly-query -p heavenly-topology --no-default-features --target ${{ matrix.target }}
+      - name: The heavenly crate without a heap, and with every module
+        run: |
+          cargo build -p heavenly --no-default-features --features geo,orbit,query --target ${{ matrix.target }}
+          cargo build -p heavenly --no-default-features --features alloc,geo,spice,orbit,id,query,topology --target ${{ matrix.target }}
 
   examples:
     name: examples
@@ -115,9 +119,9 @@ jobs:
           base=https://naif.jpl.nasa.gov/pub/naif/generic_kernels
           [ -f kernels/de440s.bsp ] || curl -fsSL -o kernels/de440s.bsp $base/spk/planets/de440s.bsp
           [ -f kernels/moon_pa_de440_200625.bpc ] || curl -fsSL -o kernels/moon_pa_de440_200625.bpc $base/pck/moon_pa_de440_200625.bpc
-      - name: Validate against real DE440 kernels
-        run: cargo test -p heavenly-spice --test validation -- --ignored
-      - run: cargo run -p heavenly-spice --example earth_moon
+      - name: Validate against real DE440 kernels (ephemeris, lunar orientation, light time)
+        run: cargo test -p heavenly-spice -p heavenly-query --test validation -- --ignored
+      - run: cargo run -p heavenly --example earth_moon
 
   docs:
     name: rustdoc
@@ -147,6 +151,10 @@ jobs:
       - name: The module must not need JavaScript imports
         run: node -e "const m=new WebAssembly.Module(require('fs').readFileSync('book/src/playground/heavenly_viz.wasm'));if(WebAssembly.Module.imports(m).length)throw new Error(JSON.stringify(WebAssembly.Module.imports(m)))"
       - run: mdbook build book
+      - name: Every diagram directive was expanded
+        # A skipped preprocessor leaves the directive alone on its line; the
+        # escaped example in the contributing guide is inside <code>.
+        run: "! grep -rlE '^[{][{]#heavenly-diagram' book/book --include='*.html'"
       - uses: actions/upload-artifact@v4
         with:
           name: book

@@ -8,7 +8,7 @@ adapters and remote services later.
 
 ```rust,ignore
 pub trait FrameResolver {
-    type Error: From<heavenly_core::Error>;
+    type Error: From<heavenly::Error>;
     fn transform(&self, source: FrameId, destination: FrameId, epoch: Epoch)
         -> Result<FrameTransform, Self::Error>;
 }

@@ -206,4 +206,9 @@ fn precise_tdb_intervals() {
     let d = c.tdb_seconds_since(a) - c.seconds_since(a);
     assert!(d.abs() < 3.4e-3 && d.abs() > 1e-4, "{d}");
     assert!(a.tdb_minus_tt_seconds().abs() < 1.7e-3);
+    // add_tdb_seconds inverts tdb_seconds_since.
+    for s in [-1e7, -716.9, 0.0, 1e-3, 3600.0, 2e8] {
+        let e = a.add_tdb_seconds(s).unwrap();
+        assert!((e.tdb_seconds_since(a) - s).abs() < 1e-9, "{s}");
+    }
 }

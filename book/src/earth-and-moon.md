@@ -1,14 +1,12 @@
 # Earth, Moon and Mars
 
-The `heavenly-geo` crate connects body-fixed frames to inertial ones and
+The `heavenly::geo` crate connects body-fixed frames to inertial ones and
 locates things on body surfaces.
 
-```toml
-heavenly-geo = { git = "https://github.com/sevki/heavenly" }
-```
+This is the `heavenly::geo` module of the `heavenly` crate (cargo feature `geo`, on by default).
 
 ```rust,ignore
-{{#include ../../heavenly-geo/examples/sites.rs:sites}}
+{{#include ../../heavenly/examples/sites.rs:sites}}
 ```
 
 ## Ellipsoids and geodetic coordinates
@@ -62,7 +60,7 @@ pole motion and every periodic term.
 
 These are cartographic conventions, not dynamical ephemerides. For metre-level
 lunar work, use the DE440 `MOON_PA` / `MOON_ME` frames from
-[`heavenly-spice`](spice.md) instead.
+[`heavenly::spice`](spice.md) instead.
 
 ## Accuracy
 

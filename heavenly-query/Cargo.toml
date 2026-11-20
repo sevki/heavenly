@@ -1,0 +1,25 @@
+[package]
+name = "heavenly-query"
+version.workspace = true
+description = "Light time, look angles, line of sight and visibility windows for heavenly"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://sevki.github.io/heavenly/api/heavenly_query/"
+rust-version.workspace = true
+
+[features]
+default = ["std"]
+std = ["alloc", "heavenly-core/std"]
+# Enables `find_windows`, which returns a `Vec`.
+alloc = ["heavenly-core/alloc"]
+
+[dependencies]
+heavenly-core = { version = "0.5.0", path = "../heavenly-core", default-features = false }
+libm = "0.2"
+
+[dev-dependencies]
+heavenly-geo = { path = "../heavenly-geo" }
+heavenly-orbit = { path = "../heavenly-orbit" }
+heavenly-spice = { path = "../heavenly-spice" }

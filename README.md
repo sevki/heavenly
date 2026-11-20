@@ -4,110 +4,93 @@
 
 # heavenly
 
-**[Book](https://sevki.github.io/heavenly/)** · **[Playground](https://sevki.github.io/heavenly/playground.html)** (the library in your browser, as WebAssembly) · **[API docs](https://sevki.github.io/heavenly/api/heavenly_core/)** · [Changelog](CHANGELOG.md)
+**[Book](https://sevki.github.io/heavenly/)** · **[Playground](https://sevki.github.io/heavenly/playground.html)** (the library in your browser, as WebAssembly) · **[API docs](https://sevki.github.io/heavenly/api/heavenly/)** · [Changelog](CHANGELOG.md)
 
 A Rust library for describing, transforming and resolving physical locations
-across celestial bodies and moving reference frames — from a rack in London to
+across celestial bodies and moving reference frames, from a rack in London to
 a lunar base or a spacecraft in transit.
 
 > **Identity is stable; position is time-dependent; reference frames provide
 > meaning; placement topology is policy.**
 
-* **Playground:** an [interactive orbit and ground-track explorer](https://sevki.github.io/heavenly/playground.html), running the library as WebAssembly.
-* **Book:** [https://sevki.github.io/heavenly/](https://sevki.github.io/heavenly/), built from [`book/`](book/src/SUMMARY.md) with mdbook (`mdbook serve book`) and published from `main`, with [API docs](https://sevki.github.io/heavenly/api/heavenly_core/) under `/api/`.
-* **Design proposal:** [`docs/design.md`](docs/design.md).
-
-## Status
-
-| Milestone | Crate | State |
-|-----------|-------|-------|
-| M1 — Core types and invariants | `heavenly-core` | implemented |
-| M2 — Earth and Moon | `heavenly-geo`, `heavenly-spice` | implemented |
-| M3 — Moving objects | `heavenly-orbit` | implemented |
-| M4 — Local frames and identity | `heavenly-id` | implemented |
-| M5 — Spatial and operational queries | `heavenly-topology` | planned |
-
-## `heavenly-core`
-
-* `Epoch` — an instant stored as integer nanoseconds of TT since J2000, with
-  UTC (leap seconds, including `23:59:60`), TAI, TT and TDB conversions.
-  Parsing requires an explicit time scale (`Z`, ` TAI`, ` TT`, ` TDB`).
-* `FrameId` — namespaced frame identifiers; each frame names an origin *and*
-  axes (e.g. `GCRF`, `ITRF`, `SSB_ICRF`, `MOON_PA`).
-* `Transform` / `FrameTransform` — rigid, time-dependent transforms with an
-  exactly specified velocity convention; composition and inversion are tested
-  against finite differences.
-* `StateVector` (runtime-checked frame) and `Coordinate<F>` (compile-time frame).
-* `FrameResolver`, `FrameGraph` (path-finding resolver), `Locator`,
-  `FixedLocator`, `LocationId`, `LocationRecord`.
-
-The crate is `no_std` with `--no-default-features`; `alloc` enables
-`FrameGraph`, `std` (default) adds `std::error::Error`. MSRV is Rust 1.70.
-
-## CI
-
-Every PR runs rustfmt, clippy (std and `no_std`), tests on Linux/macOS/Windows,
-the MSRV, bare-metal builds (`thumbv7em-none-eabihf`, `riscv32imac-unknown-none-elf`),
-every example, rustdoc with `-D warnings`, and the mdbook build.
-
-```rust
-use heavenly_core::*;
-
-let epoch = Epoch::parse("2026-11-19T17:00:00Z")?;
-let site = FrameId::custom(Namespace(1), 100).unwrap();
-let rack_frame = FrameId::custom(Namespace(1), 101).unwrap();
-
-let mut frames = FrameGraph::new();
-frames.add_fixed(rack_frame, site, Transform::fixed(Rotation::IDENTITY, Vec3::new(10.0, 0.0, 0.0)))?;
-
-let rack = FixedLocator { frame: rack_frame, position_m: Vec3::new(1.0, 2.0, 0.0) };
-let state = rack.state_at(epoch, site, &frames)?;
+```toml
+[dependencies]
+heavenly = { git = "https://github.com/sevki/heavenly" }
 ```
 
-## `heavenly-geo`
+```rust
+use heavenly::geo::{earth, Ellipsoid, Geodetic};
+use heavenly::orbit::{gm, ConicElements, TwoBodyLocator};
+use heavenly::query::look_angles;
+use heavenly::*;
 
-* `Ellipsoid` (WGS84, GRS80, Moon, Mars) and `Geodetic` ↔ Cartesian, plus
-  local east-north-up frames for facilities.
-* `earth`: ITRF ↔ GCRF, within 7.6 mas (≈0.24 m) of SOFA's full IAU 2006/2000A
-  model, with caller-supplied EOP.
-* `iau`: IAU Moon and Mars rotation models, matching SPICE `pck00011` to < 0.02 mas.
+let epoch = Epoch::parse("2026-11-19T17:00:00Z")?;
+let mut frames = FrameGraph::new();
+earth::register(&mut frames, earth::EarthOrientation::ZERO)?;
 
-Every accuracy figure is checked in tests against SOFA- and SPICE-generated
-reference values (`heavenly-geo/tests/reference`).
+// A ground station in London (east-north-up) and a satellite in a 420 km orbit.
+let london = FrameId::custom(Namespace(1), 1).unwrap();
+let site = Geodetic::from_degrees(51.5072, -0.1276, 35.0)?;
+frames.add_fixed(london, FrameId::ITRF, site.enu_to_body_fixed(&Ellipsoid::WGS84))?;
+let sat = TwoBodyLocator {
+    frame: FrameId::GCRF,
+    elements: ConicElements {
+        periapsis_m: 6_798_137.0, eccentricity: 0.0005, inclination_rad: 51.64f64.to_radians(),
+        ascending_node_rad: 3.0, argument_of_periapsis_rad: 0.0, mean_anomaly_rad: 0.0,
+        epoch, gm_m3_s2: gm::EARTH,
+    },
+};
+let look = look_angles::<_, _, Error>(london, &sat, epoch, &frames)?;
+```
 
-## `heavenly-spice`
+## What's in it
 
-* A dependency-free reader for SPICE SPK (types 2/3) and binary PCK (type 2)
-  kernels, both byte orders: JPL DE ephemerides and DE440 lunar orientation.
-* `frames::register_ephemeris` / `register_moon` connect `SSB_ICRF`, `GCRF`,
-  `MOON_ICRF`, `MOON_PA` and `MOON_ME` on a `FrameGraph`.
-* Reproduces SPICE to rounding on `de440s.bsp` (7e-5 m) and the lunar PCK
-  (5e-12 rad).
+The core types (`Epoch`, `FrameId`, `Transform`, `StateVector`, `FrameGraph`,
+`Locator`, `LocationId`, …) are at the crate root. Everything else is a
+module behind a cargo feature, all on by default:
 
-## `heavenly-orbit`
+| Module | What it does | Book |
+|--------|--------------|------|
+| crate root | epochs (UTC with leap seconds, TAI, TT, TDB), frames, transforms, frame graph, locators | [Concepts](https://sevki.github.io/heavenly/concepts.html) |
+| `heavenly::geo` | ellipsoids, geodetic coordinates, ENU site frames, Earth orientation (ITRF ↔ GCRF), IAU Moon/Mars models | [Earth, Moon and Mars](https://sevki.github.io/heavenly/earth-and-moon.html) |
+| `heavenly::spice` | dependency-free reader for JPL SPK / binary PCK kernels (DE440, lunar orientation) | [Ephemerides](https://sevki.github.io/heavenly/spice.html) |
+| `heavenly::orbit` | two-body propagation, orbital elements, sampled trajectories with explicit coverage and gap errors | [Orbits](https://sevki.github.io/heavenly/orbits.html) |
+| `heavenly::id` | stable identities, aliases, and a registry of facilities, racks and spacecraft with their own frames | [Identity](https://sevki.github.io/heavenly/identity.html) |
+| `heavenly::query` | light time, look angles, line of sight past the Earth or Moon, visibility windows | [Signals](https://sevki.github.io/heavenly/signals.html) |
+| `heavenly::topology` | failure domains and jurisdictions, as policy rather than coordinates | [Topology](https://sevki.github.io/heavenly/topology.html) |
 
-* `kepler::propagate`: universal-variable two-body propagation, for any
-  eccentricity.
-* `ConicElements`: elements ↔ state vectors (SPICE `conics` / `oscelt`
-  conventions).
-* `TwoBodyLocator` and `SampledTrajectory`: locators for moving objects, with
-  explicit `OutsideCoverage` / `DataGap` errors.
-* Matches SPICE `prop2b` / `conics` / `oscelt` to about 1e-12 relative.
+## Checked against the references
 
-## `heavenly-id`
+Every accuracy figure in the book is measured in the test suite against SOFA
+(IAU) or SPICE (JPL) reference values that CI regenerates:
 
-* `LocationId` identity (UUID-compatible), `Alias` names such as
-  `dc:lhr:01/hall-2/rack-07`, and a `Registry` that resolves either one.
-* Entities mount local frames in their parents: fixed (rooms, racks,
-  modules), geodetic (sites on a body), or on a trajectory with inertial or
-  LVLH attitude (spacecraft).
-* `register_frames` turns the tree into frame-graph edges, so any rack can
-  be located in any frame.
+| Check | Reference | Worst difference |
+|-------|-----------|------------------|
+| Earth orientation, 1980–2050 | SOFA `c2t06a` (IAU 2006/2000A) | 7.6 mas (≈0.24 m) |
+| DE440 planetary ephemeris | SPICE `spkgeo` | 7e-5 m |
+| DE440 lunar orientation | SPICE `sxform` | 5e-12 rad |
+| Two-body propagation | SPICE `prop2b` | 3.4e-12 relative |
+| Light time, Moon / Sun / Mars | SPICE `spkezr` CN / XCN | 4.7e-11 s |
+
+## `no_std`
+
+`heavenly` is `no_std` with `default-features = false`. Its only external
+dependency is `libm`, and CI builds it for Cortex-M and RISC-V bare-metal
+targets. MSRV is Rust 1.70. See
+[`no_std` and features](https://sevki.github.io/heavenly/no-std.html).
+
+## Repository layout
+
+`heavenly/` is the crate you depend on. It re-exports the internal
+`heavenly-*` crates as modules and holds the examples (`cargo run -p heavenly
+--example placement`). The book's source is in [`book/`](book/src/SUMMARY.md)
+(`mdbook serve book`). The design proposal is
+[`docs/design.md`](docs/design.md).
 
 ## Versioning
 
-All crates share one version, and the minor version increases with each
-milestone (currently **0.4.0** = M4). See [`CHANGELOG.md`](CHANGELOG.md).
+One version for the whole workspace. The minor version increases with each
+roadmap milestone (currently **0.5.0** = M5). See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 

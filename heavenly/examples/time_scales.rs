@@ -1,5 +1,5 @@
 //! Converting one instant between time scales.
-use heavenly_core::*;
+use heavenly::*;
 
 fn main() -> Result<(), Error> {
     // ANCHOR: scales

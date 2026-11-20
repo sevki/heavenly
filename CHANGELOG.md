@@ -4,6 +4,49 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
+## 0.5.0: M5, spatial and operational queries
+
+### Changed
+- **One crate to depend on: `heavenly`.** It re-exports the core types at
+  its root and the rest as feature-gated modules: `heavenly::geo`, `::spice`,
+  `::orbit`, `::id`, `::query` and `::topology`, all on by default. The
+  `heavenly-*` crates are now internal building blocks. The examples moved
+  to `heavenly/examples/`, and the book and README use
+  `heavenly = { git = … }` and `use heavenly::…`.
+
+### Added
+- `heavenly::query` (crate `heavenly-query`):
+  - `light_time`: converged Newtonian light time in both directions
+    (`Direction::Reception` / `Transmission`, SPICE's CN / XCN), with the
+    corrected relative position and range rate;
+  - `look_angles`: azimuth, elevation, range and range rate from a site;
+  - `Occulter`: line of sight past the oblate Earth or the Moon;
+  - `find_windows`: rise/set intervals of any condition, by bisection.
+- `heavenly::topology` (crate `heavenly-topology`): failure domains and
+  jurisdictions over `LocationId`s. Domain dependencies form a DAG, and the
+  queries are `failure_domains`, `shared_failure_domains`, `independent`,
+  `blast_radius` and `domains_of_kind`.
+- `heavenly-core`: `Epoch::add_tdb_seconds`. Light time is a TDB interval;
+  stepping by TT instead put fast bodies up to 2 cm out.
+- Book: *Signals and visibility* and *Placement topology* chapters, with
+  computed light-time, visibility and topology diagrams; the `placement`
+  example.
+
+### Fixed
+- Book build: mdbook silently skips a preprocessor whose `supports` probe
+  fails, so a diagram crate that did not compile produced pages with raw
+  directives. `book/heavenly-preprocessor.sh` now answers the probe without
+  building, and CI fails if any directive survives into the HTML.
+
+### Validation
+- Light time against SPICE `spkezr` CN / XCN: 0.44 mm on the synthetic
+  kernel; on DE440, 1.4 cm (limited by SPICE's f64 epoch near 1909) and
+  4.7e-11 s.
+- Visibility windows: every rise and set within 1 s of brute-force 1 s
+  sampling.
+- Line of sight past the Earth: the sign agrees exactly with elevation for a
+  site on the ellipsoid.
+
 ## 0.4.0: M4, local frames and identity
 
 ### Added

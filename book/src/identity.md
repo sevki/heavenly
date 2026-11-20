@@ -4,7 +4,7 @@
 
 A rack is moved to another hall. A data centre is renamed. A spacecraft
 module is swapped. None of these should change *which thing* we are talking
-about. `heavenly-id` keeps three things separate:
+about. `heavenly::id` keeps three things separate:
 
 | Concept | Type | Changes when… |
 |---------|------|---------------|
@@ -12,9 +12,7 @@ about. `heavenly-id` keeps three things separate:
 | Name | `Alias`, e.g. `dc:lhr:01/hall-2/rack-07` | it is renamed or re-pointed |
 | Position | the entity's `Mount` and local frame | it moves, or time passes |
 
-```toml
-heavenly-id = { git = "https://github.com/sevki/heavenly" }
-```
+This is the `heavenly::id` module of the `heavenly` crate (cargo feature `id`, on by default).
 
 <figure class="hv-figure">
 {{#heavenly-diagram registry}}
@@ -27,10 +25,10 @@ This is the design proposal's own example: a rack in a London data centre
 and a rack on an orbiting satellite, resolved by alias and compared.
 
 ```rust,ignore
-{{#include ../../heavenly-id/examples/racks.rs:registry}}
+{{#include ../../heavenly/examples/racks.rs:registry}}
 ```
 
-Running the example (`cargo run -p heavenly-id --example racks`) prints the
+Running the example (`cargo run -p heavenly --example racks`) prints the
 current separation and relative speed. It also finds the closest approach
 over the next day: 441 km, on an overhead pass.
 

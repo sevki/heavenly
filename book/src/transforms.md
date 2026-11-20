@@ -30,7 +30,7 @@ This term is why a point at rest on the ground moves at about 465 m/s in an
 inertial frame:
 
 ```rust,ignore
-{{#include ../../heavenly-core/examples/rotating_earth.rs:earth}}
+{{#include ../../heavenly/examples/rotating_earth.rs:earth}}
 ```
 
 ## Composition

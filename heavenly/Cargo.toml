@@ -1,0 +1,48 @@
+[package]
+name = "heavenly"
+version.workspace = true
+description = "Positions, frames, ephemerides, orbits, identities and visibility across the Earth, Moon, planets and spacecraft"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://sevki.github.io/heavenly/api/heavenly/"
+rust-version.workspace = true
+readme = "../README.md"
+keywords = ["astronomy", "coordinates", "geodesy", "orbits", "ephemeris"]
+categories = ["science", "aerospace", "no-std"]
+
+# Everything is on by default. For `no_std`, turn defaults off and pick
+# modules, e.g. `default-features = false, features = ["geo", "orbit"]`.
+[features]
+default = ["std", "geo", "spice", "orbit", "id", "query", "topology"]
+std = [
+    "alloc",
+    "heavenly-core/std",
+    "heavenly-geo?/std",
+    "heavenly-spice?/std",
+    "heavenly-orbit?/std",
+    "heavenly-id?/std",
+    "heavenly-query?/std",
+    "heavenly-topology?/std",
+]
+# `FrameGraph`, `SampledTrajectory`, `find_windows`, …
+alloc = ["heavenly-core/alloc", "heavenly-geo?/alloc", "heavenly-orbit?/alloc", "heavenly-query?/alloc"]
+geo = ["dep:heavenly-geo"]
+spice = ["alloc", "dep:heavenly-spice"]
+orbit = ["dep:heavenly-orbit"]
+id = ["alloc", "geo", "dep:heavenly-id"]
+query = ["dep:heavenly-query"]
+topology = ["alloc", "dep:heavenly-topology"]
+
+[dependencies]
+heavenly-core = { version = "0.5.0", path = "../heavenly-core", default-features = false }
+heavenly-geo = { version = "0.5.0", path = "../heavenly-geo", default-features = false, optional = true }
+heavenly-spice = { version = "0.5.0", path = "../heavenly-spice", default-features = false, optional = true }
+heavenly-orbit = { version = "0.5.0", path = "../heavenly-orbit", default-features = false, optional = true }
+heavenly-id = { version = "0.5.0", path = "../heavenly-id", default-features = false, optional = true }
+heavenly-query = { version = "0.5.0", path = "../heavenly-query", default-features = false, optional = true }
+heavenly-topology = { version = "0.5.0", path = "../heavenly-topology", default-features = false, optional = true }
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,0 +1,18 @@
+[package]
+name = "heavenly-topology"
+version.workspace = true
+description = "Failure domains, jurisdictions and placement policy for heavenly locations"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://sevki.github.io/heavenly/api/heavenly_topology/"
+rust-version.workspace = true
+
+[features]
+default = ["std"]
+std = ["heavenly-core/std"]
+
+[dependencies]
+heavenly-core = { version = "0.5.0", path = "../heavenly-core", default-features = false, features = ["alloc"] }
+

@@ -3,7 +3,7 @@
 //! The Earth rotation model here is a uniform spin for illustration only;
 //! real Earth orientation (precession, nutation, polar motion, UT1) belongs
 //! in `heavenly-geo` / an ephemeris adapter.
-use heavenly_core::*;
+use heavenly::*;
 
 fn main() -> Result<(), Error> {
     // ANCHOR: earth

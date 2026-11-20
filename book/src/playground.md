@@ -4,8 +4,8 @@ An interactive orbit explorer. Everything on this page is computed in your
 browser by the heavenly crates, compiled to WebAssembly (an 86 KB module
 with no JavaScript bindings). Only the drawing is JavaScript.
 
-* **Orbit**: `heavenly-orbit` propagates the elements (`TwoBodyLocator`).
-* **Earth's rotation**: `heavenly-geo` turns GCRF into ITRF at every frame
+* **Orbit**: `heavenly::orbit` propagates the elements (`TwoBodyLocator`).
+* **Earth's rotation**: `heavenly::geo` turns GCRF into ITRF at every frame
   (IAU 2006 precession, nutation and the Earth Rotation Angle). That is why
   the graticule turns and the ground track drifts west on each orbit.
 * **London's view**: a `FrameGraph` resolves the satellite into an

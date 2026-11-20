@@ -163,6 +163,22 @@ impl Epoch {
         self.seconds_since(earlier) + (self.tdb_minus_tt_seconds() - earlier.tdb_minus_tt_seconds())
     }
 
+    /// Returns `self` advanced by `s` seconds of **TDB** (rather than TT), so
+    /// that `result.tdb_seconds_since(self) == s` to well under a
+    /// nanosecond. Use this for intervals of barycentric coordinate time,
+    /// such as light time in an SSB frame. TDB and TT run at rates that
+    /// differ by up to 3.3e-10, which is 0.2 µs over a 10-minute interval.
+    pub fn add_tdb_seconds(self, s: f64) -> Result<Epoch, Error> {
+        // Solve tdb_seconds_since(self) = s; converges in two steps because
+        // TDB − TT changes by < 1e-9 s per second.
+        let mut e = self.add_seconds(s)?;
+        for _ in 0..2 {
+            let err = e.tdb_seconds_since(self) - s;
+            e = e.add_seconds(-err)?;
+        }
+        Ok(e)
+    }
+
     /// Builds an epoch from a calendar date in the given scale.
     pub fn from_calendar(c: Calendar) -> Result<Epoch, Error> {
         if !(1..=12).contains(&c.month)

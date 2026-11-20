@@ -1,5 +1,5 @@
 //! Locating a rack inside a facility frame, relative to a site frame.
-use heavenly_core::*;
+use heavenly::*;
 
 fn main() -> Result<(), Error> {
     // ANCHOR: rack
