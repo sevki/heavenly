@@ -15,7 +15,7 @@ coordinate. It never assumes a single universal XYZ origin, and it never
 compares two positions unless they share a frame and an epoch.
 
 <figure class="hv-figure">
-{{#include diagrams/crates.svg}}
+{{#heavenly-diagram crates}}
 <figcaption>The crates. Each depends only on <code>heavenly-core</code> (and <code>libm</code>).</figcaption>
 </figure>
 

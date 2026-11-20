@@ -17,7 +17,7 @@ value is read in or written out.
 ```
 
 <figure class="hv-figure">
-{{#include diagrams/time-scales.svg}}
+{{#heavenly-diagram time-scales}}
 <figcaption>Computed by <code>Epoch</code>: leap seconds step TAI − UTC; TT is a fixed 32.184 s after TAI; TDB wobbles about TT by ±1.66 ms over a year.</figcaption>
 </figure>
 

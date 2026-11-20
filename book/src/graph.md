@@ -21,7 +21,7 @@ Nodes are frames and edges are known transforms. Each edge is registered as
 the shortest path and composes the transforms along it.
 
 <figure class="hv-figure">
-{{#include diagrams/frame-graph.svg}}
+{{#heavenly-diagram frame-graph}}
 <figcaption>The frame graph from the Earth–Moon example. Each edge names the crate that supplies it; locators (dashed) attach objects to frames.</figcaption>
 </figure>
 

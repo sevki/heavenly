@@ -8,6 +8,11 @@ src = "src"
 [build]
 create-missing = false
 
+# Draws the diagrams ({{#heavenly-diagram NAME}}) with the heavenly crates at
+# build time; see diagrams/src/main.rs.
+[preprocessor.heavenly]
+command = "cargo run --quiet --locked -p heavenly-diagrams --"
+
 [output.html]
 additional-css = ["theme/heavenly.css"]
 git-repository-url = "https://github.com/sevki/heavenly"

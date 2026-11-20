@@ -30,7 +30,7 @@ orbits. Elliptic propagation is reduced modulo the period first, so long
 spans keep their precision.
 
 <figure class="hv-figure">
-{{#include diagrams/conics.svg}}
+{{#heavenly-diagram conics}}
 <figcaption>Every curve is computed by <code>kepler::propagate</code> from the same periapsis.</figcaption>
 </figure>
 
@@ -41,7 +41,7 @@ distance `q` rather than semi-major axis, so circular, parabolic and
 hyperbolic orbits need no special cases.
 
 <figure class="hv-figure">
-{{#include diagrams/orbital-elements.svg}}
+{{#heavenly-diagram orbital-elements}}
 <figcaption>The six angles and distances of <code>ConicElements</code>; the orbit is computed by <code>ConicElements::state_at</code>.</figcaption>
 </figure>
 
@@ -75,7 +75,7 @@ give is an explicit error:
   `max_gap_s`.
 
 <figure class="hv-figure">
-{{#include diagrams/sampled-trajectory.svg}}
+{{#heavenly-diagram sampled-trajectory}}
 <figcaption>Top: where a trajectory answers and where it refuses. Bottom: measured interpolation error, zero at each sample and bounded by h⁴/384·rω⁴ between them.</figcaption>
 </figure>
 

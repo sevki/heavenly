@@ -28,14 +28,14 @@ the lunar south pole can be compared directly:
 The frame graph this builds is:
 
 <figure class="hv-figure">
-{{#include diagrams/frame-graph.svg}}
+{{#heavenly-diagram frame-graph}}
 <figcaption>Frames registered by the example. The SPK supplies the translations to the barycentre, and the PCK and FK supply the lunar orientation.</figcaption>
 </figure>
 
 ## The file format
 
 <figure class="hv-figure">
-{{#include diagrams/daf.svg}}
+{{#heavenly-diagram daf}}
 <figcaption>How an SPK file is laid out, and how one Chebyshev record is evaluated.</figcaption>
 </figure>
 

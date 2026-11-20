@@ -130,17 +130,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --workspace --no-deps --all-features
 
-  diagrams:
-    name: diagrams up to date
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo run -p heavenly-diagrams
-      - name: Committed SVGs must match the generator
-        run: git diff --exit-code -- book/src/diagrams
-
   book:
     name: mdbook
     runs-on: ubuntu-latest
