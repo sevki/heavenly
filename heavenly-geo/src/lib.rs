@@ -47,6 +47,8 @@ extern crate alloc;
 
 pub mod earth;
 mod ellipsoid;
+#[cfg(feature = "alloc")]
+pub mod eop;
 mod geodetic;
 pub mod iau;
 mod mat;

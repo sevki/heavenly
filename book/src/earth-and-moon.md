@@ -48,8 +48,42 @@ the IERS 2010 CIO-based procedure:
 * the Earth Rotation Angle, from UT1;
 * polar motion, from the supplied EOP.
 
-You supply Earth orientation parameters (EOP) through `EarthOrientation`, or
-implement `EopProvider` to interpolate a published IERS series.
+## Earth orientation parameters (EOP)
+
+The Earth's rotation is not predictable to the precision of the model above.
+IERS measures it and publishes the differences as Earth orientation
+parameters: polar motion (x, y) and UT1 − UTC. Without them, results are off
+by up to ≈15 m (polar motion) and ≈400 m (UT1). This also affects SGP4
+satellites, through TEME → ITRF.
+
+`eop::EopTable` reads the two standard IERS files and implements
+`EopProvider`, so you can pass it straight to `earth::register`:
+
+```rust,ignore
+let eop = EopTable::open("finals2000A.all")?;   // or eopc04.1962-now
+earth::register(&mut frames, eop)?;
+```
+
+| File | From | Covers |
+|------|------|--------|
+| [`finals2000A.all`](https://maia.usno.navy.mil/ser7/finals2000A.all) | IERS Rapid Service (USNO) | 1973 to now, then about a year of **predictions** |
+| [`eopc04.1962-now`](https://hpiers.obspm.fr/iers/eop/eopc04/eopc04.1962-now) | IERS Earth Orientation Centre (Paris) | the definitive series, 1962 (read from 1972) to a few weeks ago |
+
+How the table is used:
+
+* **Interpolation.** Values are given daily at 0h UTC and interpolated with
+  four-point Lagrange polynomials, as IERS recommends. UT1 is interpolated
+  as UT1 − TAI, which is continuous, so leap seconds are handled exactly.
+* **Final vs rapid values.** Where finals2000A has the final (Bulletin B)
+  values, they are used; otherwise the rapid (Bulletin A) ones.
+* **Predictions.** `first_predicted()` says where the predicted values start.
+* **No extrapolation.** Outside the table, lookups fail with
+  `OutsideCoverage`; nothing is extrapolated.
+* **Without std.** `EopTable::parse` takes the file's text, so it also works
+  without std (it needs `alloc`).
+
+For a fixed set of values, for example from a Bulletin A you read yourself,
+use `EarthOrientation::from_bulletin`.
 
 ## IAU body models (Moon, Mars)
 
@@ -80,6 +114,19 @@ SPICE). The generator is `heavenly-geo/tests/reference/generate.py`.
 Earth accuracy in practice depends on the EOP you supply. Using zero for
 polar motion costs up to ≈15 m, and using zero for UT1 − UTC costs up to
 ≈400 m.
+
+`EopTable` is checked against astropy's IERS readers
+(`heavenly-geo/tests/reference/generate_eop.py`) on finals2000A and C04:
+
+| Check | Result |
+|-------|--------|
+| Values on the tabulated days | identical |
+| Between days, against astropy's linear interpolation | ≤ 29 µs UT1, ≤ 0.16 mas pole |
+| Days left out of the table, predicted from their neighbours | Lagrange 39 µs and 0.27 mas; linear 110 µs and 0.45 mas |
+| UT1 across the 2016-12-31 leap second | continuous |
+
+29 µs of UT1 is about 1.3 cm at the equator, and 0.16 mas of pole position
+is about 5 mm.
 
 Angular velocities are checked against finite differences of the rotation.
 The Earth model neglects precession, nutation and polar-motion rates, which

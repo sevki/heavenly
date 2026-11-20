@@ -69,7 +69,8 @@ impl EarthOrientation {
     }
 }
 
-/// Supplies EOP for an epoch, for example by interpolating an IERS series.
+/// Supplies EOP for an epoch, for example by interpolating an IERS series
+/// ([`crate::eop::EopTable`] does that for the standard IERS files).
 pub trait EopProvider {
     fn earth_orientation(&self, epoch: Epoch) -> Result<EarthOrientation, Error>;
 }
