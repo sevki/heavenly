@@ -442,6 +442,7 @@ dependencies = [
  "heavenly-core",
  "heavenly-geo",
  "heavenly-orbit",
+ "heavenly-query",
 ]
 
 [[package]]

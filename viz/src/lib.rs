@@ -2,9 +2,10 @@
 //! WebAssembly (`wasm32-unknown-unknown`).
 //!
 //! Everything is computed with the heavenly crates themselves: two-body
-//! propagation (`heavenly-orbit`), Earth orientation and geodetic conversion
-//! (`heavenly-geo`), and frame resolution through a `FrameGraph`
-//! (`heavenly-core`).
+//! propagation and SGP4 from a TLE (`heavenly-orbit`), Earth orientation and
+//! geodetic conversion (`heavenly-geo`), frame resolution through a
+//! `FrameGraph` (`heavenly-core`), and the Sun, shadows, look angles and
+//! pass search (`heavenly-query`). The JavaScript only draws.
 //!
 //! The interface to JavaScript is a handful of `extern "C"` functions taking
 //! and returning numbers. Array results are written to an output buffer whose
@@ -13,9 +14,43 @@
 
 use std::cell::RefCell;
 
-use heavenly_core::{Epoch, Error, FrameGraph, FrameId, Locator, Namespace, TimeScale};
+use heavenly_core::{
+    Epoch, Error, FrameGraph, FrameId, FrameResolver, Locator, Namespace, StateVector, TimeScale,
+    Vec3,
+};
 use heavenly_geo::{earth, Ellipsoid, Geodetic};
-use heavenly_orbit::{gm, ConicElements, TwoBodyLocator};
+use heavenly_orbit::{gm, ConicElements, Gravity, OpsMode, Sgp4, Tle, TwoBodyLocator};
+use heavenly_query::{find_windows, look_angles, AnalyticSun, Occulter, ShadowKind};
+
+/// What the playground propagates: a two-body conic from the sliders, or a
+/// TLE through SGP4.
+#[derive(Clone, Debug)]
+pub enum Satellite {
+    TwoBody(TwoBodyLocator),
+    Tle(Box<Sgp4>, Tle),
+}
+
+impl Locator for Satellite {
+    type Error = Error;
+    fn state_at<R: FrameResolver + ?Sized>(
+        &self,
+        epoch: Epoch,
+        frame: FrameId,
+        resolver: &R,
+    ) -> Result<StateVector, Error>
+    where
+        Error: From<R::Error>,
+    {
+        match self {
+            Satellite::TwoBody(l) => l.state_at(epoch, frame, resolver),
+            Satellite::Tle(s, _) => s.state_at(epoch, frame, resolver),
+        }
+    }
+}
+
+/// An ISS element set, used by the playground's "ISS (TLE)" preset.
+pub const ISS_TLE: &str = "1 25544U 98067A   20194.88612269 -.00002218  00000-0 -31515-4 0  9992
+2 25544  51.6461 221.2784 0001413  89.1723 280.4612 15.49507896236008";
 
 /// Equatorial radius used for altitudes (WGS84), in metres.
 pub const EARTH_RADIUS_M: f64 = 6_378_137.0;
@@ -28,6 +63,7 @@ pub const LONDON: (f64, f64, f64) = (51.5072, -0.1276, 35.0);
 pub struct Model {
     epoch: Epoch,
     orbit: TwoBodyLocator,
+    sat: Satellite,
     graph: FrameGraph,
     station: FrameId,
 }
@@ -59,6 +95,19 @@ impl Model {
                     gm_m3_s2: gm::EARTH,
                 },
             },
+            sat: Satellite::TwoBody(TwoBodyLocator {
+                frame: FrameId::GCRF,
+                elements: ConicElements {
+                    periapsis_m: EARTH_RADIUS_M + 420e3,
+                    eccentricity: 0.0,
+                    inclination_rad: 0.0,
+                    ascending_node_rad: 0.0,
+                    argument_of_periapsis_rad: 0.0,
+                    mean_anomaly_rad: 0.0,
+                    epoch,
+                    gm_m3_s2: gm::EARTH,
+                },
+            }),
             graph,
             station,
         };
@@ -93,7 +142,41 @@ impl Model {
             ns.min(999_999_999),
         )?;
         self.orbit.elements.epoch = self.epoch;
+        if let Satellite::TwoBody(l) = &mut self.sat {
+            l.elements.epoch = self.epoch;
+        }
         Ok(())
+    }
+
+    /// Switches to a TLE propagated with SGP4, and moves the epoch to the
+    /// TLE's. Accepts two lines, or three with a name line first.
+    pub fn set_tle(&mut self, text: &str) -> Result<(), Error> {
+        let lines: Vec<&str> = text
+            .lines()
+            .map(str::trim_end)
+            .filter(|l| l.starts_with("1 ") || l.starts_with("2 "))
+            .collect();
+        let [l1, l2] = lines[..] else {
+            return Err(Error::Parse("expected the two lines of a TLE"));
+        };
+        let tle = Tle::parse(l1, l2)?;
+        let sgp4 = Sgp4::new(&tle, Gravity::Wgs72, OpsMode::Improved)?;
+        self.epoch = sgp4.epoch();
+        self.sat = Satellite::Tle(Box::new(sgp4), tle);
+        Ok(())
+    }
+
+    /// The model epoch as UTC `[year, month, day, hour, minute, second]`.
+    pub fn epoch_fields(&self) -> Result<Vec<f64>, Error> {
+        let c = self.epoch.to_calendar(TimeScale::Utc)?;
+        Ok(vec![
+            c.year as f64,
+            c.month as f64,
+            c.day as f64,
+            c.hour as f64,
+            c.minute as f64,
+            c.second as f64 + c.nanosecond as f64 * 1e-9,
+        ])
     }
 
     /// Sets the orbit: periapsis altitude (km), eccentricity, and angles in
@@ -124,6 +207,7 @@ impl Model {
             ));
         }
         self.orbit.elements = el;
+        self.sat = Satellite::TwoBody(self.orbit);
         Ok(())
     }
 
@@ -133,14 +217,30 @@ impl Model {
 
     /// `[period s, perigee alt km, apogee alt km, perigee speed km/s, apogee speed km/s]`.
     pub fn info(&self) -> Vec<f64> {
-        let el = &self.orbit.elements;
-        let q = el.periapsis_m;
-        let e = el.eccentricity;
-        let a = q / (1.0 - e);
+        let (a, e, period) = match &self.sat {
+            Satellite::TwoBody(l) => {
+                let el = &l.elements;
+                (
+                    el.periapsis_m / (1.0 - el.eccentricity),
+                    el.eccentricity,
+                    el.period_s().unwrap_or(f64::NAN),
+                )
+            }
+            Satellite::Tle(_, tle) => {
+                // Mean semi-major axis from the mean motion.
+                let n = tle.mean_motion_rev_day * std::f64::consts::TAU / 86_400.0;
+                (
+                    (gm::EARTH / (n * n)).cbrt(),
+                    tle.eccentricity,
+                    86_400.0 / tle.mean_motion_rev_day,
+                )
+            }
+        };
+        let q = a * (1.0 - e);
         let apo = a * (1.0 + e);
         let speed = |r: f64| (gm::EARTH * (2.0 / r - 1.0 / a)).sqrt() / 1e3;
         vec![
-            el.period_s().unwrap_or(f64::NAN),
+            period,
             (q - EARTH_RADIUS_M) / 1e3,
             (apo - EARTH_RADIUS_M) / 1e3,
             speed(q),
@@ -148,19 +248,22 @@ impl Model {
         ]
     }
 
-    /// One full orbit in GCRF, as `n` points `[x, y, z]` in km.
+    /// One full orbit in GCRF, as `n` points `[x, y, z (km), sunlit fraction]`.
     pub fn orbit_path(&self, n: usize) -> Result<Vec<f64>, Error> {
-        let period = self
-            .orbit
-            .elements
-            .period_s()
-            .ok_or(Error::InvalidInput("open orbit"))?;
-        let mut out = Vec::with_capacity(3 * n);
+        let period = self.info()[0];
+        if !period.is_finite() {
+            return Err(Error::InvalidInput("open orbit"));
+        }
+        let mut out = Vec::with_capacity(4 * n);
         for k in 0..n {
-            let s = self
-                .orbit
-                .state(self.at(period * k as f64 / (n - 1).max(1) as f64)?)?;
+            let t = self.at(period * k as f64 / (n - 1).max(1) as f64)?;
+            let s = self.sat.state_at(t, FrameId::GCRF, &self.graph)?;
             out.extend_from_slice(&(s.position_m / 1e3).to_array());
+            out.push(
+                Occulter::EARTH
+                    .shadow::<_, _, _, Error>(&self.sat, &AnalyticSun, t, &self.graph)?
+                    .sunlit_fraction(),
+            );
         }
         Ok(out)
     }
@@ -168,25 +271,45 @@ impl Model {
     /// The state `t_s` seconds after the epoch:
     /// `[x, y, z (km, GCRF), vx, vy, vz (km/s), lat °, lon °, alt km,
     ///   london elevation °, london azimuth °, london range km,
-    ///   earth rotation angle °, periapsis x, y, z (km, GCRF)]`.
+    ///   earth rotation angle °, periapsis x, y, z (km, GCRF),
+    ///   sunlit fraction, shadow (0 sunlit, 1 penumbra, 2 umbra, 3 antumbra),
+    ///   Sun elevation at London °, subsolar latitude °, subsolar longitude °,
+    ///   Sun direction x, y, z (unit, GCRF)]`.
     pub fn state(&self, t_s: f64) -> Result<Vec<f64>, Error> {
         let epoch = self.at(t_s)?;
-        let s = self.orbit.state(epoch)?;
+        let s = self.sat.state_at(epoch, FrameId::GCRF, &self.graph)?;
         let ground = s.to_frame(FrameId::ITRF, &self.graph)?;
         let g = Geodetic::from_cartesian(ground.position_m, &Ellipsoid::WGS84)?;
         let local = self
-            .orbit
+            .sat
             .state_at(epoch, self.station, &self.graph)?
             .position_m;
         let range = local.norm();
         let elevation = (local.z / range).asin().to_degrees();
         let azimuth = local.x.atan2(local.y).to_degrees().rem_euclid(360.0);
         let era = earth::earth_rotation_angle(epoch, &earth::EarthOrientation::ZERO)?;
-        let (peri, _) = ConicElements {
-            mean_anomaly_rad: 0.0,
-            ..self.orbit.elements
-        }
-        .state_at(self.orbit.elements.epoch)?;
+        let peri = match &self.sat {
+            Satellite::TwoBody(l) => {
+                ConicElements {
+                    mean_anomaly_rad: 0.0,
+                    ..l.elements
+                }
+                .state_at(l.elements.epoch)?
+                .0
+            }
+            // SGP4 has no fixed periapsis; show the nearest point of the
+            // current orbit instead.
+            Satellite::Tle(..) => self.nearest_point(epoch)?,
+        };
+        let shadow = Occulter::EARTH.shadow::<_, _, _, Error>(
+            &self.sat,
+            &AnalyticSun,
+            epoch,
+            &self.graph,
+        )?;
+        let sun_el = look_angles::<_, _, Error>(self.station, &AnalyticSun, epoch, &self.graph)?
+            .elevation_rad;
+        let (sub_lat, sub_lon) = self.subsolar(epoch)?;
         let mut out = Vec::with_capacity(16);
         out.extend_from_slice(&(s.position_m / 1e3).to_array());
         out.extend_from_slice(&(s.velocity_m_s / 1e3).to_array());
@@ -200,26 +323,146 @@ impl Model {
             era.to_degrees(),
         ]);
         out.extend_from_slice(&(peri / 1e3).to_array());
+        out.extend_from_slice(&[
+            shadow.sunlit_fraction(),
+            match shadow.kind() {
+                ShadowKind::Sunlit => 0.0,
+                ShadowKind::Penumbra => 1.0,
+                ShadowKind::Umbra => 2.0,
+                ShadowKind::Antumbra => 3.0,
+            },
+            sun_el.to_degrees(),
+            sub_lat,
+            sub_lon,
+        ]);
+        let sun_dir = AnalyticSun::position_m(epoch)
+            .normalized()
+            .ok_or(Error::NonFinite)?;
+        out.extend_from_slice(&sun_dir.to_array());
+        Ok(out)
+    }
+
+    /// The lowest point over the next orbit, in GCRF (metres).
+    fn nearest_point(&self, epoch: Epoch) -> Result<Vec3, Error> {
+        let period = self.info()[0];
+        let mut best = (f64::INFINITY, Vec3::ZERO);
+        for k in 0..180 {
+            let p = self
+                .sat
+                .state_at(
+                    epoch.add_seconds(period * k as f64 / 180.0)?,
+                    FrameId::GCRF,
+                    &self.graph,
+                )?
+                .position_m;
+            if p.norm() < best.0 {
+                best = (p.norm(), p);
+            }
+        }
+        Ok(best.1)
+    }
+
+    /// The point where the Sun is overhead: geocentric latitude, longitude (°).
+    fn subsolar(&self, epoch: Epoch) -> Result<(f64, f64), Error> {
+        let sun = AnalyticSun
+            .state_at(epoch, FrameId::ITRF, &self.graph)?
+            .position_m;
+        Ok((
+            (sun.z / sun.norm()).asin().to_degrees(),
+            sun.y.atan2(sun.x).to_degrees(),
+        ))
+    }
+
+    /// The day–night line at `t_s`, ready to fill on a longitude–latitude
+    /// map: the subsolar point `[lat °, lon °]`, then `n` points
+    /// `[lat °, lon °]` from longitude −180° to 180°, each at the latitude
+    /// where the Sun is on the horizon. The night side lies between this
+    /// line and the pole opposite the subsolar point.
+    pub fn terminator(&self, t_s: f64, n: usize) -> Result<Vec<f64>, Error> {
+        let (lat0, lon0) = self.subsolar(self.at(t_s)?)?;
+        // At an equinox the line runs along two meridians; a tiny tilt keeps
+        // tan(lat0) finite and makes it a steep step instead.
+        let t0 = lat0.to_radians().tan();
+        let t0 = if t0.abs() < 1e-9 {
+            1e-9f64.copysign(t0)
+        } else {
+            t0
+        };
+        let mut out = Vec::with_capacity(2 * n + 2);
+        out.extend_from_slice(&[lat0, lon0]);
+        for k in 0..n {
+            let lon = -180.0 + 360.0 * k as f64 / (n - 1).max(1) as f64;
+            let lat = (-(lon - lon0).to_radians().cos() / t0).atan();
+            out.extend_from_slice(&[lat.to_degrees(), lon]);
+        }
+        Ok(out)
+    }
+
+    /// Passes over London above 10° between `t0_s` and `t1_s`, as rows
+    /// `[start s, end s, max elevation °, visible s]`. A moment is visible
+    /// when the satellite is sunlit and the Sun is more than 6° below
+    /// London's horizon.
+    pub fn passes(&self, t0_s: f64, t1_s: f64) -> Result<Vec<f64>, Error> {
+        let (t0, t1) = (self.at(t0_s)?, self.at(t1_s)?);
+        let mask = 10f64.to_radians();
+        let el = |t: Epoch| {
+            look_angles::<_, _, Error>(self.station, &self.sat, t, &self.graph)
+                .map(|a| a.elevation_rad)
+        };
+        let step = (self.info()[0] / 100.0).clamp(10.0, 300.0);
+        let windows = find_windows(t0, t1, step, 1e-2, |t| Ok::<f64, Error>(el(t)? - mask))?;
+        let mut out = Vec::with_capacity(4 * windows.len());
+        for w in windows {
+            let (mut top, mut visible) = (f64::MIN, 0.0);
+            let n = ((w.duration_s() / 5.0).ceil() as usize).max(2);
+            let dt = w.duration_s() / n as f64;
+            for k in 0..=n {
+                let t = w.start.add_seconds(dt * k as f64)?;
+                top = top.max(el(t)?);
+                let lit = Occulter::EARTH.shadow::<_, _, _, Error>(
+                    &self.sat,
+                    &AnalyticSun,
+                    t,
+                    &self.graph,
+                )?;
+                let sun = look_angles::<_, _, Error>(self.station, &AnalyticSun, t, &self.graph)?;
+                if k < n && lit.sunlit_fraction() > 0.5 && sun.elevation_rad < -6f64.to_radians() {
+                    visible += dt;
+                }
+            }
+            out.extend_from_slice(&[
+                w.start.seconds_since(self.epoch),
+                w.end.seconds_since(self.epoch),
+                top.to_degrees(),
+                visible,
+            ]);
+        }
         Ok(out)
     }
 
     /// Sub-satellite points from `t0_s` to `t1_s` (seconds after the epoch),
-    /// `n` samples of `[lat °, lon °, london elevation °]`.
+    /// `n` samples of `[lat °, lon °, london elevation °, sunlit fraction]`.
     pub fn ground_track(&self, t0_s: f64, t1_s: f64, n: usize) -> Result<Vec<f64>, Error> {
-        let mut out = Vec::with_capacity(3 * n);
+        let mut out = Vec::with_capacity(4 * n);
         for k in 0..n {
             let t = t0_s + (t1_s - t0_s) * k as f64 / (n - 1).max(1) as f64;
             let epoch = self.at(t)?;
-            let s = self.orbit.state_at(epoch, FrameId::ITRF, &self.graph)?;
+            let s = self.sat.state_at(epoch, FrameId::ITRF, &self.graph)?;
             let g = Geodetic::from_cartesian(s.position_m, &Ellipsoid::WGS84)?;
             let local = self
-                .orbit
+                .sat
                 .state_at(epoch, self.station, &self.graph)?
+                .position_m;
+            let sun = AnalyticSun
+                .state_at(epoch, FrameId::ITRF, &self.graph)?
                 .position_m;
             out.extend_from_slice(&[
                 g.latitude_rad.to_degrees(),
                 g.longitude_rad.to_degrees(),
                 (local.z / local.norm()).asin().to_degrees(),
+                Occulter::EARTH
+                    .shadow_at(s.position_m, sun)
+                    .sunlit_fraction(),
             ]);
         }
         Ok(out)
@@ -310,6 +553,44 @@ pub extern "C" fn set_orbit(alt_km: f64, e: f64, i: f64, raan: f64, argp: f64, m
     status(with_model(|m| m.set_orbit(alt_km, e, i, raan, argp, m0)))
 }
 
+thread_local! {
+    static INPUT: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
+}
+
+/// A buffer of `len` bytes for JS to write text into (for [`set_tle`]).
+#[no_mangle]
+pub extern "C" fn input_ptr(len: usize) -> *mut u8 {
+    INPUT.with(|b| {
+        let mut b = b.borrow_mut();
+        b.clear();
+        b.resize(len, 0);
+        b.as_mut_ptr()
+    })
+}
+
+/// Loads the TLE that JS wrote into the input buffer.
+#[no_mangle]
+pub extern "C" fn set_tle(len: usize) -> i32 {
+    let text = INPUT
+        .with(|b| String::from_utf8_lossy(&b.borrow()[..len.min(b.borrow().len())]).into_owned());
+    status(with_model(|m| m.set_tle(&text)))
+}
+
+#[no_mangle]
+pub extern "C" fn epoch_fields() -> usize {
+    publish(with_model(|m| m.epoch_fields()))
+}
+
+#[no_mangle]
+pub extern "C" fn terminator(t_s: f64, n: usize) -> usize {
+    publish(with_model(|m| m.terminator(t_s, n)))
+}
+
+#[no_mangle]
+pub extern "C" fn passes(t0_s: f64, t1_s: f64) -> usize {
+    publish(with_model(|m| m.passes(t0_s, t1_s)))
+}
+
 #[no_mangle]
 pub extern "C" fn info() -> usize {
     publish(with_model(|m| Ok(m.info())))
@@ -347,7 +628,7 @@ mod tests {
         assert!((info[0] / 60.0 - 92.8).abs() < 0.3, "period {}", info[0]);
         assert!((info[1] - 420.0).abs() < 1e-6);
         let track = m.ground_track(0.0, 86400.0, 500).unwrap();
-        let max_lat = track.chunks(3).map(|c| c[0].abs()).fold(0.0, f64::max);
+        let max_lat = track.chunks(4).map(|c| c[0].abs()).fold(0.0, f64::max);
         // Geodetic latitude of a 51.64° orbit peaks slightly above 51.64°.
         assert!((51.5..52.2).contains(&max_lat), "{max_lat}");
         let s = m.state(0.0).unwrap();
@@ -375,6 +656,68 @@ mod tests {
     }
 
     #[test]
+    fn tle_mode() {
+        let mut m = Model::new().unwrap();
+        m.set_tle(&format!("ISS (ZARYA)\n{ISS_TLE}\n")).unwrap();
+        assert_eq!(
+            &m.epoch_fields().unwrap()[..5],
+            &[2020.0, 7.0, 12.0, 21.0, 16.0]
+        );
+        let info = m.info();
+        assert!((info[0] / 60.0 - 92.9).abs() < 0.2, "period {}", info[0]);
+        let s = m.state(0.0).unwrap();
+        assert_eq!(s.len(), 24);
+        assert!((0.0..=1.0).contains(&s[16]) && (0.0..=3.0).contains(&s[17]));
+        assert!((s[8] - 420.0).abs() < 40.0, "altitude {}", s[8]);
+        // The track and the shadow agree with heavenly-query directly.
+        let track = m.ground_track(0.0, 5400.0, 200).unwrap();
+        let dark = track.chunks(4).filter(|c| c[3] < 0.5).count();
+        // July: the ISS is in its high-sun season, in shadow ~15 % of each orbit.
+        assert!((20..60).contains(&dark), "{dark} of 200 samples in shadow");
+        // Back to the sliders.
+        assert_eq!(set_orbit(400.0, 0.0, 10.0, 0.0, 0.0, 0.0), 0);
+        assert!(m.set_tle("not a tle").is_err());
+    }
+
+    #[test]
+    fn passes_match_the_visible_passes_example() {
+        let mut m = Model::new().unwrap();
+        m.set_tle(ISS_TLE).unwrap();
+        let rows = m.passes(0.0, 2.0 * 86_400.0).unwrap();
+        let visible: Vec<_> = rows.chunks(4).filter(|r| r[3] > 0.0).collect();
+        // `cargo run --example visible_passes` finds these seven, with these
+        // durations (s); passes() samples every 5 s.
+        let expect = [234.0, 405.0, 404.0, 350.0, 404.0, 405.0, 377.0];
+        assert_eq!(visible.len(), expect.len(), "{visible:?}");
+        for (r, d) in visible.iter().zip(expect) {
+            assert!((r[3] - d).abs() <= 6.0, "{r:?} vs {d}");
+        }
+    }
+
+    #[test]
+    fn terminator_is_where_the_sun_sets() {
+        let m = Model::new().unwrap();
+        let t = m.terminator(3600.0, 90).unwrap();
+        let sun = AnalyticSun
+            .state_at(m.at(3600.0).unwrap(), FrameId::ITRF, &m.graph)
+            .unwrap()
+            .position_m
+            .normalized()
+            .unwrap();
+        let unit = |lat: f64, lon: f64| {
+            let (la, lo) = (lat.to_radians(), lon.to_radians());
+            Vec3::new(la.cos() * lo.cos(), la.cos() * lo.sin(), la.sin())
+        };
+        assert!((unit(t[0], t[1]).dot(sun) - 1.0).abs() < 1e-12);
+        for p in t[2..].chunks(2) {
+            assert!(unit(p[0], p[1]).dot(sun).abs() < 1e-9, "{p:?}");
+        }
+        // Points run west to east, one per longitude.
+        let lons: Vec<f64> = t[2..].chunks(2).map(|p| p[1]).collect();
+        assert!(lons.windows(2).all(|w| w[1] > w[0]) && lons[0] == -180.0 && lons[89] == 180.0);
+    }
+
+    #[test]
     fn invalid_inputs_report_errors() {
         assert_eq!(set_orbit(400.0, 1.2, 10.0, 0.0, 0.0, 0.0), 1);
         let n = last_error();
@@ -383,6 +726,6 @@ mod tests {
         assert_eq!(set_epoch(2026, 2, 30, 0, 0, 0.0), 1);
         assert_eq!(set_epoch(2026, 11, 19, 17, 0, 0.0), 0);
         assert_eq!(set_orbit(400.0, 0.1, 10.0, 0.0, 0.0, 0.0), 0);
-        assert!(orbit_path(100) == 300);
+        assert!(orbit_path(100) == 400);
     }
 }

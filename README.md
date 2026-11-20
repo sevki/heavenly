@@ -58,7 +58,7 @@ module behind a cargo feature, all on by default:
 | `heavenly::spice` | dependency-free reader for JPL SPK / binary PCK kernels (DE440, lunar orientation) | [Ephemerides](https://sevki.github.io/heavenly/spice.html) |
 | `heavenly::orbit` | two-body propagation, orbital elements, sampled trajectories with explicit coverage and gap errors; TLEs and SGP4/SDP4 | [Orbits](https://sevki.github.io/heavenly/orbits.html), [SGP4](https://sevki.github.io/heavenly/sgp4.html) |
 | `heavenly::id` | stable identities, aliases, and a registry of facilities, racks and spacecraft with their own frames | [Identity](https://sevki.github.io/heavenly/identity.html) |
-| `heavenly::query` | light time, look angles, line of sight past the Earth or Moon, visibility windows | [Signals](https://sevki.github.io/heavenly/signals.html) |
+| `heavenly::query` | light time, look angles, line of sight past the Earth or Moon, visibility windows, the Sun, shadows and eclipses | [Signals](https://sevki.github.io/heavenly/signals.html) |
 | `heavenly::topology` | failure domains and jurisdictions, as policy rather than coordinates | [Topology](https://sevki.github.io/heavenly/topology.html) |
 
 ## Checked against the references
@@ -75,6 +75,7 @@ the committed copies, and runs the comparisons on Linux x64 and arm64:
 | DE440 lunar orientation | SPICE `sxform` | 5e-12 rad |
 | Two-body propagation | SPICE `prop2b` | 3.4e-12 relative |
 | Light time, Moon / Sun / Mars | SPICE `spkezr` CN / XCN | 4.7e-11 s |
+| Eclipse edges (LEO, GEO, HEO) | SPICE `gfoclt` | 39 ms |
 | SGP4/SDP4, official verification set | Vallado's C++ | 1.5e-9 km |
 | TEME → ITRF | Skyfield | 5.9e-9 m |
 

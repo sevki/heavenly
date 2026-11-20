@@ -33,12 +33,17 @@ mod spice_data;
 #[allow(dead_code)]
 #[path = "../../heavenly-query/tests/reference/data.rs"]
 mod query_data;
+#[rustfmt::skip]
+#[allow(dead_code)]
+#[path = "../../heavenly-query/tests/reference/shadow_data.rs"]
+mod shadow_data;
 
 use std::sync::Arc;
 
 use heavenly::geo::earth::{self, EarthOrientation};
 use heavenly::orbit::{kepler, Gravity, OpsMode, Sgp4, Tle};
-use heavenly::query::{light_time, Direction};
+use heavenly::orbit::{ConicElements, TwoBodyLocator};
+use heavenly::query::{eclipses, light_time, AnalyticSun, Direction, Occulter};
 use heavenly::spice::{SpiceError, Spk, SpkLocator};
 use heavenly::*;
 
@@ -219,4 +224,58 @@ fn spk_and_light_time_match_spice() {
         assert!(dp < tol, "{target} from {observer} {corr}: {dp:e} m");
         assert!((got.light_time_s - lt).abs() < 1e-9);
     }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+fn eclipses_match_spice_gfoclt() {
+    let et = |e: f64| Epoch::from_tdb_seconds_since_j2000(e).unwrap();
+    let mut graph = FrameGraph::new();
+    earth::register(&mut graph, EarthOrientation::ZERO).unwrap();
+    let body = Occulter {
+        body_fixed: FrameId::ITRF,
+        equatorial_radius_m: shadow_data::EARTH_RADII_KM.0 * 1e3,
+        polar_radius_m: shadow_data::EARTH_RADII_KM.1 * 1e3,
+    };
+    let mut worst = 0.0f64;
+    for (name, el, start, end, any, full) in shadow_data::ECLIPSES {
+        let sat = TwoBodyLocator {
+            frame: FrameId::GCRF,
+            elements: ConicElements {
+                periapsis_m: el[0] * 1e3,
+                eccentricity: el[1],
+                inclination_rad: el[2],
+                ascending_node_rad: el[3],
+                argument_of_periapsis_rad: el[4],
+                mean_anomaly_rad: el[5],
+                epoch: et(el[6]),
+                gm_m3_s2: el[7] * 1e9,
+            },
+        };
+        let found = eclipses::<_, _, _, Error>(
+            &body,
+            &sat,
+            &AnalyticSun,
+            et(*start),
+            et(*end),
+            30.0,
+            1e-3,
+            &graph,
+        )
+        .unwrap();
+        for (ours, theirs) in [(&found.partial, any), (&found.total, full)] {
+            assert_eq!(ours.len(), theirs.len(), "{name}");
+            for (w, (a, b)) in ours.iter().zip(theirs.iter()) {
+                let d = w
+                    .start
+                    .seconds_since(et(*a))
+                    .abs()
+                    .max(w.end.seconds_since(et(*b)).abs());
+                worst = worst.max(d);
+                // AnalyticSun's 32″ moves edges by up to ~2 s at GEO.
+                assert!(d < 2.5, "{name}: {d} s");
+            }
+        }
+    }
+    report!("eclipse edges (AnalyticSun) vs SPICE gfoclt: worst {worst:.2} s");
 }
