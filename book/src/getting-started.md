@@ -5,7 +5,7 @@ on [docs.rs](https://docs.rs/heavenly):
 
 ```toml
 [dependencies]
-heavenly = "0.6"
+heavenly = "0.7"
 ```
 
 To follow `main` instead, use
