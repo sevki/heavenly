@@ -55,6 +55,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --all-features
+      # The batch operations must match the single-item ones bit for bit on
+      # every SIMD path: here AVX2 on x86_64 (the arm64 runners use NEON).
+      - name: Batch parity with AVX2
+        if: runner.arch == 'X64'
+        run: cargo test -p heavenly-core --test batch
+        env:
+          RUSTFLAGS: -D warnings -C target-cpu=x86-64-v3
       - run: cargo test -p heavenly-core -p heavenly-geo -p heavenly-orbit -p heavenly-query --no-default-features --features alloc
 
   msrv:
@@ -83,6 +90,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo build -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --target ${{ matrix.target }}
       - run: cargo build -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --features alloc --target ${{ matrix.target }}
+      - name: SIMD without std
+        run: cargo build -p heavenly-core --no-default-features --features alloc,simd --target ${{ matrix.target }}
       - run: cargo build -p heavenly-spice -p heavenly-id -p heavenly-query -p heavenly-topology --no-default-features --target ${{ matrix.target }}
       - name: The heavenly crate without a heap, and with every module
         run: |
@@ -144,6 +153,10 @@ jobs:
       # The SOFA, SPICE, Vallado SGP4 and Skyfield checks, compiled to
       # wasm32-unknown-unknown and run with wasm-bindgen-test.
       - run: wasm-pack test --node heavenly --test conformance
+      - name: The same, with WebAssembly SIMD (simd128)
+        run: wasm-pack test --node heavenly --test conformance
+        env:
+          RUSTFLAGS: -D warnings -C target-feature=+simd128
 
   conformance:
     name: conformance

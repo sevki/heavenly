@@ -15,7 +15,7 @@ categories = ["science", "aerospace", "no-std"]
 # Everything is on by default. For `no_std`, turn defaults off and pick
 # modules, e.g. `default-features = false, features = ["geo", "orbit"]`.
 [features]
-default = ["std", "geo", "spice", "orbit", "id", "query", "topology"]
+default = ["std", "simd", "geo", "spice", "orbit", "id", "query", "topology"]
 std = [
     "alloc",
     "heavenly-core/std",
@@ -38,6 +38,9 @@ topology = ["alloc", "dep:heavenly-topology"]
 # (`heavenly::wire`). Off by default: needs std, Rust 1.91+, and jetstream's
 # dependencies.
 jetstream = ["std", "heavenly-core/jetstream"]
+# SIMD for the batch operations (`wide`; AVX/SSE2, NEON, WebAssembly simd128).
+# Results are bit-identical with or without it.
+simd = ["heavenly-core/simd"]
 
 [dependencies]
 heavenly-core = { version = "0.6.0", path = "../heavenly-core", default-features = false }

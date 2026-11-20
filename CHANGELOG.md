@@ -30,6 +30,31 @@ within a milestone. Before 1.0, a minor bump may break the API.
 
   All of it is computed by the library in WebAssembly.
 
+- **Batch operations with SIMD.** These give results bit-identical to the
+  single-item methods, on every platform, with or without SIMD:
+  - `Rotation::apply_batch`;
+  - `Transform::apply_positions` and `Transform::apply_batch`;
+  - `FrameTransform::apply_batch`;
+  - `StateVector::to_frame_batch`, which resolves one transform per run of
+    states sharing a frame and epoch.
+
+  The new default `simd` feature (via `wide` 0.7, `no_std`, MSRV 1.61)
+  processes position-and-velocity transforms four at a time with AVX,
+  SSE2, NEON or WebAssembly `simd128`. Each lane does the same IEEE
+  operations in the same order as the scalar code, with no fused
+  multiply-add. Measured on x86_64 (`cargo bench -p heavenly-core --bench
+  batch`), SIMD makes `Transform::apply_batch` 1.6× faster with SSE2 and
+  3.1× with AVX-512, and `to_frame_batch` 2.7× and 4.0×.
+  `to_frame_batch` is 14–56× faster than `to_frame` in a loop.
+
+  Rotation-only batches stay plain loops: the compiler already vectorises
+  them, and an explicit SIMD kernel measured no faster. Single-vector
+  operations are unchanged, because there isn't enough work in one 3-vector
+  operation for SIMD to pay.
+
+  CI checks parity with AVX2, NEON (arm64 runners) and `simd128`
+  (`wasm-pack`), and builds `simd` without std.
+
 ### Changed
 - **`heavenly::id::Registry` is now a trait.** Implement its four lookup
   methods (`namespace`, `entity`, `lookup_alias`, `for_each_entity`) over

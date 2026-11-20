@@ -51,6 +51,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+mod batch;
 mod error;
 mod frame;
 #[cfg(feature = "alloc")]

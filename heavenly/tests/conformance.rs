@@ -279,3 +279,40 @@ fn eclipses_match_spice_gfoclt() {
     }
     report!("eclipse edges (AnalyticSun) vs SPICE gfoclt: worst {worst:.2} s");
 }
+
+/// The batch operations agree bit for bit with the single-item ones, here
+/// too: under wasm-pack this runs as WebAssembly, with `simd128` when the
+/// target feature is on.
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+fn batch_operations_match_single_items() {
+    let r = Rotation::from_quaternion(0.9, 0.1, -0.3, 0.2).unwrap();
+    let t = Transform::new(
+        r,
+        Vec3::new(1e3, -2e3, 3e3),
+        Vec3::new(4.0, 5.0, -6.0),
+        Vec3::new(1e-4, -2e-4, 7.29e-5),
+    );
+    let mk = |k: usize| {
+        Vec3::new(
+            k as f64 * 1.5e6,
+            -(k as f64) * 2.5e5 - 0.0,
+            1e-300 * k as f64,
+        )
+    };
+    for n in 0..11 {
+        let ps: Vec<Vec3> = (0..n).map(mk).collect();
+        let vs: Vec<Vec3> = (0..n).map(|k| mk(k + 7) * 1e-3).collect();
+        let (mut bp, mut bv) = (ps.clone(), vs.clone());
+        t.apply_batch(&mut bp, &mut bv).unwrap();
+        for k in 0..n {
+            let (p, v) = t.apply(ps[k], vs[k]);
+            for (a, b) in [(p, bp[k]), (v, bv[k])] {
+                assert_eq!(
+                    [a.x.to_bits(), a.y.to_bits(), a.z.to_bits()],
+                    [b.x.to_bits(), b.y.to_bits(), b.z.to_bits()]
+                );
+            }
+        }
+    }
+}
