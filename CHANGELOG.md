@@ -4,6 +4,16 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
+## Unreleased
+
+### Added
+- CI: WebAssembly. A `wasm32-unknown-unknown` job builds `heavenly` without
+  std, with alloc and with std, plus every crate's tests and examples. A
+  `wasm-pack` job runs a portable conformance suite (`heavenly/tests/
+  conformance.rs`: SGP4, TEME, Earth orientation, two-body, SPK and light
+  time against their references, with the synthetic kernel compiled in)
+  in Node with wasm-bindgen-test. The same suite runs natively.
+
 ## 0.6.0: M6, TLEs and SGP4
 
 ### Added

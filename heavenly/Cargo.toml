@@ -48,5 +48,14 @@ heavenly-id = { version = "0.6.0", path = "../heavenly-id", default-features = f
 heavenly-query = { version = "0.6.0", path = "../heavenly-query", default-features = false, optional = true }
 heavenly-topology = { version = "0.6.0", path = "../heavenly-topology", default-features = false, optional = true }
 
+# wasm-pack runs the conformance suite in Node with wasm-bindgen-test; other
+# targets don't build it.
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[[test]]
+name = "conformance"
+required-features = ["geo", "orbit", "query", "spice"]
+
 [package.metadata.docs.rs]
 all-features = true

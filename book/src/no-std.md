@@ -27,6 +27,16 @@ CI builds every module for two bare-metal targets, `thumbv7em-none-eabihf`
 (Cortex-M) and `riscv32imac-unknown-none-elf`, with and without `alloc`, so
 `no_std` support is tested.
 
+## WebAssembly
+
+`heavenly` builds for `wasm32-unknown-unknown` with or without `std`, and
+needs no JavaScript glue. The [playground](playground.md) is the library
+compiled to an 86 KB module with no imports. CI builds it for that target in
+every feature configuration. It also runs the conformance suite there under
+Node, with `wasm-pack test --node heavenly --test conformance`: the SOFA,
+SPICE, Vallado SGP4 and Skyfield checks, so results in the browser are known
+to match the references.
+
 The minimum supported Rust version is **1.70** for every feature except
 `jetstream`, which needs what jetstream itself needs (currently Rust 1.91).
 CI checks both.

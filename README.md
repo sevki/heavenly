@@ -82,7 +82,8 @@ the committed copies, and runs the comparisons on Linux x64 and arm64:
 
 `heavenly` is `no_std` with `default-features = false`. Its only external
 dependency is `libm`, and CI builds it for Cortex-M and RISC-V bare-metal
-targets. MSRV is Rust 1.70. See
+targets and for `wasm32-unknown-unknown`, where it also runs the
+conformance suite (in Node, via `wasm-pack`). MSRV is Rust 1.70. See
 [`no_std` and features](https://sevki.github.io/heavenly/no-std.html).
 
 ## Repository layout
