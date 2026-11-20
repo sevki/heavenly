@@ -1,7 +1,7 @@
 [package]
 name = "heavenly-diagrams"
 version = "0.0.0"
-description = "Generates the book's SVG diagrams from the heavenly crates"
+description = "mdbook preprocessor that draws the book's diagrams with the heavenly crates"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -11,3 +11,4 @@ publish = false
 heavenly-core = { path = "../heavenly-core" }
 heavenly-geo = { path = "../heavenly-geo" }
 heavenly-orbit = { path = "../heavenly-orbit" }
+serde_json = "1"

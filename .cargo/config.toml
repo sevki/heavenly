@@ -1,0 +1,4 @@
+# Keep `cargo update` within the workspace's declared rust-version (MSRV),
+# which CI checks with `--locked`.
+[resolver]
+incompatible-rust-versions = "fallback"

@@ -1,42 +1,158 @@
-//! Generates the book's diagrams: `cargo run -p heavenly-diagrams`.
+//! `mdbook-heavenly`: an mdbook preprocessor that draws the book's diagrams.
 //!
-//! Figures that show physics are computed with the heavenly crates
-//! themselves, so they cannot drift from the code. CI regenerates them and
-//! fails if the committed SVGs differ.
+//! A chapter writes `{{#heavenly-diagram conics}}` and the preprocessor
+//! replaces it with an inline SVG computed by the heavenly crates at book
+//! build time. Figures that show physics (time scales, geodesy, orbits,
+//! interpolation error) therefore always match the code that built the book.
+//!
+//! Configured in `book/book.toml`:
+//!
+//! ```toml
+//! [preprocessor.heavenly]
+//! command = "cargo run --quiet --locked -p heavenly-diagrams --"
+//! ```
+//!
+//! Other modes, for working on figures:
+//! * `heavenly-diagrams list` prints the diagram names;
+//! * `heavenly-diagrams render <dir>` writes every diagram to `<dir>/<name>.svg`.
 
 mod svg;
 
 use std::f64::consts::{FRAC_PI_2, PI, TAU};
+use std::io::Read;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 use heavenly_core::{Epoch, FrameId, StateVector, TimeScale, Vec3};
 use heavenly_geo::{Ellipsoid, Geodetic};
 use heavenly_orbit::{kepler, ConicElements, SampledTrajectory, TwoBodyLocator};
+use serde_json::Value;
 use svg::{Svg, ACCENT, ACCENT2, FG, MUTED};
 
-fn main() {
-    let out = std::env::args()
-        .nth(1)
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../book/src/diagrams"));
-    std::fs::create_dir_all(&out).unwrap();
-    type Figure = (&'static str, fn() -> String);
-    let figures: [Figure; 10] = [
-        ("crates.svg", crates),
-        ("frame-graph.svg", frame_graph),
-        ("transform.svg", transform),
-        ("time-scales.svg", time_scales),
-        ("geodetic.svg", geodetic),
-        ("orbital-elements.svg", orbital_elements),
-        ("conics.svg", conics),
-        ("sampled-trajectory.svg", sampled_trajectory),
-        ("daf.svg", daf),
-        ("earth-orientation.svg", earth_orientation),
-    ];
-    for (name, f) in figures {
-        std::fs::write(out.join(name), f()).unwrap();
-        println!("wrote {}", out.join(name).display());
+type Figure = (&'static str, fn() -> String);
+
+const FIGURES: [Figure; 10] = [
+    ("crates", crates),
+    ("frame-graph", frame_graph),
+    ("transform", transform),
+    ("time-scales", time_scales),
+    ("geodetic", geodetic),
+    ("orbital-elements", orbital_elements),
+    ("conics", conics),
+    ("sampled-trajectory", sampled_trajectory),
+    ("daf", daf),
+    ("earth-orientation", earth_orientation),
+];
+
+const DIRECTIVE: &str = "{{#heavenly-diagram ";
+
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        // mdbook asks whether a renderer is supported; inline SVG works
+        // anywhere HTML does, and is harmless elsewhere.
+        Some("supports") => ExitCode::SUCCESS,
+        Some("list") => {
+            for (name, _) in FIGURES {
+                println!("{name}");
+            }
+            ExitCode::SUCCESS
+        }
+        Some("render") => {
+            let out = PathBuf::from(args.get(1).map_or("diagrams", String::as_str));
+            std::fs::create_dir_all(&out).expect("create output directory");
+            for (name, f) in FIGURES {
+                let path = out.join(format!("{name}.svg"));
+                std::fs::write(&path, f()).expect("write diagram");
+                println!("wrote {}", path.display());
+            }
+            ExitCode::SUCCESS
+        }
+        None => match preprocess() {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("mdbook-heavenly: {e}");
+                ExitCode::FAILURE
+            }
+        },
+        Some(other) => {
+            eprintln!(
+                "mdbook-heavenly: unknown command {other:?} (expected supports, list or render)"
+            );
+            ExitCode::FAILURE
+        }
     }
+}
+
+/// Reads `[context, book]` from stdin and writes the book back with every
+/// directive expanded.
+fn preprocess() -> Result<(), String> {
+    let mut input = String::new();
+    std::io::stdin()
+        .read_to_string(&mut input)
+        .map_err(|e| e.to_string())?;
+    let parsed: Value =
+        serde_json::from_str(&input).map_err(|e| format!("invalid input from mdbook: {e}"))?;
+    let mut book = parsed
+        .get(1)
+        .cloned()
+        .ok_or("expected [context, book] on stdin")?;
+    // mdbook 0.5 calls the top-level list `items`; 0.4 called it `sections`.
+    for key in ["items", "sections"] {
+        if let Some(items) = book.get_mut(key) {
+            expand_items(items)?;
+        }
+    }
+    serde_json::to_writer(std::io::stdout(), &book).map_err(|e| e.to_string())
+}
+
+fn expand_items(items: &mut Value) -> Result<(), String> {
+    for item in items.as_array_mut().into_iter().flatten() {
+        if let Some(chapter) = item.get_mut("Chapter") {
+            let path = chapter
+                .get("path")
+                .and_then(Value::as_str)
+                .unwrap_or("?")
+                .to_string();
+            if let Some(Value::String(content)) = chapter.get_mut("content") {
+                *content = expand(content).map_err(|e| format!("{path}: {e}"))?;
+            }
+            if let Some(sub) = chapter.get_mut("sub_items") {
+                expand_items(sub)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Replaces each `{{#heavenly-diagram NAME}}` in `text` with that diagram.
+/// As with mdbook's own directives, a leading backslash escapes one:
+/// `\{{#heavenly-diagram NAME}}` is emitted literally, without the backslash.
+fn expand(text: &str) -> Result<String, String> {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(i) = rest.find(DIRECTIVE) {
+        if i > 0 && rest.as_bytes()[i - 1] == b'\\' {
+            out.push_str(&rest[..i - 1]);
+            out.push_str(DIRECTIVE);
+            rest = &rest[i + DIRECTIVE.len()..];
+            continue;
+        }
+        out.push_str(&rest[..i]);
+        let after = &rest[i + DIRECTIVE.len()..];
+        let end = after
+            .find("}}")
+            .ok_or("unterminated {{#heavenly-diagram …}}")?;
+        let name = after[..end].trim();
+        let (_, draw) = FIGURES.iter().find(|(n, _)| *n == name).ok_or_else(|| {
+            let known: Vec<_> = FIGURES.iter().map(|(n, _)| *n).collect();
+            format!("unknown diagram {name:?}; known: {}", known.join(", "))
+        })?;
+        out.push_str(draw().trim_end());
+        rest = &after[end + 2..];
+    }
+    out.push_str(rest);
+    Ok(out)
 }
 
 /// A labelled box; returns its centre.
@@ -1073,4 +1189,54 @@ fn earth_orientation() -> String {
     s.text((20.0, 160.0), "M = W(xp, yp, s′) · R₃(ERA) · Q(X, Y, s)      (IERS 2010 CIO-based procedure, as SOFA c2t06a)", "start", FG, 12.0);
     s.text((20.0, 186.0), "precession in full (IAU 2006), nutation truncated to 20 terms: 7.6 mas from SOFA over 1980–2050", "start", MUTED, 11.0);
     s.finish("Earth orientation chain")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn expands_directives_and_rejects_unknown_names() {
+        let md = "before\n{{#heavenly-diagram conics}}\nafter";
+        let out = expand(md).unwrap();
+        assert!(out.starts_with("before\n<svg") && out.ends_with("</svg>\nafter"));
+        // Inline SVG must not contain blank lines, which would end the HTML block.
+        assert!(!out.contains("\n\n"));
+        assert!(expand("{{#heavenly-diagram nope}}")
+            .unwrap_err()
+            .contains("unknown diagram"));
+        assert!(expand("{{#heavenly-diagram conics").is_err());
+        assert_eq!(expand("no directives").unwrap(), "no directives");
+        assert_eq!(
+            expand(r"see `\{{#heavenly-diagram conics}}`").unwrap(),
+            "see `{{#heavenly-diagram conics}}`"
+        );
+    }
+
+    #[test]
+    fn every_figure_renders() {
+        for (name, f) in FIGURES {
+            let svg = f();
+            assert!(
+                svg.starts_with("<svg") && svg.trim_end().ends_with("</svg>"),
+                "{name}"
+            );
+            assert!(!svg.contains("NaN"), "{name} contains NaN coordinates");
+        }
+    }
+
+    #[test]
+    fn walks_nested_chapters() {
+        let mut items = serde_json::json!([
+            {"Chapter": {"path": "a.md", "content": "{{#heavenly-diagram daf}}", "sub_items": [
+                {"Chapter": {"path": "b.md", "content": "x {{#heavenly-diagram crates}} y", "sub_items": []}}
+            ]}},
+            "Separator"
+        ]);
+        expand_items(&mut items).unwrap();
+        let b = items[0]["Chapter"]["sub_items"][0]["Chapter"]["content"]
+            .as_str()
+            .unwrap();
+        assert!(b.starts_with("x <svg") && b.ends_with("</svg> y"));
+    }
 }

@@ -14,7 +14,7 @@ transforms silently produce wrong velocities. `heavenly` therefore fixes it:
 | `angular_velocity_rad_s` | `ω` | angular velocity of A's axes relative to B's |
 
 <figure class="hv-figure">
-{{#include diagrams/transform.svg}}
+{{#heavenly-diagram transform}}
 <figcaption>The four quantities of a <code>Transform</code> from A to B, all expressed along B's axes.</figcaption>
 </figure>
 
