@@ -31,6 +31,7 @@ with no JavaScript bindings). Only the drawing is JavaScript.
 <button id="hv-preset-gps">GPS</button>
 <button id="hv-preset-geo">Geostationary</button>
 <button id="hv-preset-tle">ISS (TLE, SGP4)</button>
+<button id="hv-preset-walker">Constellation</button>
 <button id="hv-preset-odc">Orbital data centre</button>
 </div>
 <details class="hv-tle"><summary>Paste a TLE</summary>
@@ -74,6 +75,16 @@ with no JavaScript bindings). Only the drawing is JavaScript.
   oblateness does not rotate the apogee. That effect is not modelled here.
 * **Epoch**: change the date and the same orbit crosses different longitudes,
   because the Earth Rotation Angle is different.
+* **Constellation**: an illustrative 24-satellite Walker shell, 24/4/1
+  (`design::walker_delta`), built from the slider orbit. The altitude,
+  inclination and node sliders reshape it live. Every frame, the library
+  moves all 24 satellites into ITRF with one batch transform. It also finds
+  the inter-satellite links (`catalog::links`: under 5,000 km, and clearing
+  the Earth by 80 km), drawn in orange, and counts which data centres have
+  a satellite above 25°. Satellites in the Earth's shadow are grey.
+  `cargo run -p heavenly --example constellation` gives the day's numbers:
+  coverage and gaps over each data centre, the link network, and close
+  approaches with a crossing shell.
 * **Orbital data centre**: an illustrative solar-powered data-centre
   satellite in a dawn–dusk sun-synchronous orbit at 550 km. Published
   reports of such satellites give only a range of orbits, "500 to 2,000

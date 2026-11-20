@@ -21,6 +21,8 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "alloc")]
+pub mod catalog;
 mod light_time;
 mod shadow;
 mod sun;

@@ -61,17 +61,25 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(feature = "alloc")]
+mod catalog;
 pub mod design;
 mod elements;
 pub mod gm;
 pub mod kepler;
+#[cfg(feature = "alloc")]
+mod omm;
 #[cfg(feature = "alloc")]
 mod sampled;
 pub mod sgp4;
 mod tle;
 mod two_body;
 
+#[cfg(feature = "alloc")]
+pub use catalog::{Catalog, CatalogEntry, Rejected};
 pub use elements::ConicElements;
+#[cfg(feature = "alloc")]
+pub use omm::Omm;
 #[cfg(feature = "alloc")]
 pub use sampled::SampledTrajectory;
 pub use sgp4::{Gravity, OpsMode, Sgp4, Sgp4Error};

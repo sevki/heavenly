@@ -212,6 +212,80 @@ impl Model {
         Ok(vec![i.to_degrees(), node])
     }
 
+    /// A Walker delta constellation `total/planes/phasing` built from the
+    /// slider orbit (its altitude, inclination and node), at `t_s`:
+    ///
+    /// `[n, then n × (lat °, lon °, sunlit fraction),
+    ///   m, then m × (a, b) inter-satellite links (≤ 5 000 km, clearing the
+    ///   Earth by 80 km),
+    ///   then, per demo site, the number of satellites above 25°]`.
+    ///
+    /// All satellites are moved into ITRF with one batch transform.
+    pub fn constellation(
+        &self,
+        total: usize,
+        planes: usize,
+        phasing: usize,
+        t_s: f64,
+    ) -> Result<Vec<f64>, Error> {
+        let el = &self.orbit.elements;
+        let a = el.periapsis_m / (1.0 - el.eccentricity);
+        let sats: Vec<TwoBodyLocator> = heavenly_orbit::design::walker_delta(
+            total,
+            planes,
+            phasing,
+            el.inclination_rad,
+            a,
+            el.ascending_node_rad,
+            self.epoch,
+        )
+        .ok_or(Error::InvalidInput(
+            "total must be a multiple of planes, and phasing below planes",
+        ))?
+        .map(|elements| TwoBodyLocator {
+            frame: FrameId::GCRF,
+            elements,
+        })
+        .collect();
+        let epoch = self.at(t_s)?;
+        let mut states = sats
+            .iter()
+            .map(|s| s.state(epoch))
+            .collect::<Result<Vec<_>, _>>()?;
+        StateVector::to_frame_batch(&mut states, FrameId::ITRF, &self.graph)?;
+        let sun = AnalyticSun
+            .state_at(epoch, FrameId::ITRF, &self.graph)?
+            .position_m;
+        let mut out = vec![states.len() as f64];
+        for s in &states {
+            let g = Geodetic::from_cartesian(s.position_m, &Ellipsoid::WGS84)?;
+            out.extend_from_slice(&[
+                g.latitude_rad.to_degrees(),
+                g.longitude_rad.to_degrees(),
+                Occulter::EARTH
+                    .shadow_at(s.position_m, sun)
+                    .sunlit_fraction(),
+            ]);
+        }
+        let positions: Vec<Option<Vec3>> = states.iter().map(|s| Some(s.position_m)).collect();
+        let isl = heavenly_query::catalog::links(&positions, &Occulter::EARTH, 5_000e3, 80e3);
+        out.push(isl.len() as f64);
+        for l in &isl {
+            out.extend_from_slice(&[l.a as f64, l.b as f64]);
+        }
+        for f in &self.sites {
+            let t = self.graph.transform(FrameId::ITRF, *f, epoch)?.transform;
+            let mut local: Vec<Vec3> = positions.iter().flatten().copied().collect();
+            t.apply_positions(&mut local);
+            let up = local
+                .iter()
+                .filter(|q| (q.z / q.norm()).asin() > 25f64.to_radians())
+                .count();
+            out.push(up as f64);
+        }
+        Ok(out)
+    }
+
     /// The model epoch as UTC `[year, month, day, hour, minute, second]`.
     pub fn epoch_fields(&self) -> Result<Vec<f64>, Error> {
         let c = self.epoch.to_calendar(TimeScale::Utc)?;
@@ -649,6 +723,11 @@ pub extern "C" fn dawn_dusk(alt_km: f64) -> usize {
 }
 
 #[no_mangle]
+pub extern "C" fn constellation(total: usize, planes: usize, phasing: usize, t_s: f64) -> usize {
+    publish(with_model(|m| m.constellation(total, planes, phasing, t_s)))
+}
+
+#[no_mangle]
 pub extern "C" fn epoch_fields() -> usize {
     publish(with_model(|m| m.epoch_fields()))
 }
@@ -806,6 +885,25 @@ mod tests {
                 .any(|e| *e > 10.0)
         });
         assert!(seen);
+    }
+
+    #[test]
+    fn constellation_matches_the_example() {
+        let mut m = Model::new().unwrap();
+        m.set_epoch(2026, 11, 20, 0, 0, 0.0).unwrap();
+        m.set_orbit(550.0, 0.0, 53.0, 0.0, 0.0, 0.0).unwrap();
+        let out = m.constellation(24, 4, 1, 0.0).unwrap();
+        let n = out[0] as usize;
+        assert_eq!(n, 24);
+        let m_links = out[1 + 3 * n] as usize;
+        // `cargo run --example constellation` reports 18 links at this epoch.
+        assert_eq!(m_links, 18);
+        let per_site = &out[2 + 3 * n + 2 * m_links..];
+        assert_eq!(per_site.len(), SITES.len());
+        assert!(out[1..1 + 3 * n]
+            .chunks(3)
+            .all(|c| (0.0..=1.0).contains(&c[2])));
+        assert!(m.constellation(24, 5, 1, 0.0).is_err());
     }
 
     #[test]
