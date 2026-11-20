@@ -1,8 +1,10 @@
 [workspace]
 resolver = "2"
-members = ["heavenly-core", "heavenly-geo", "heavenly-spice"]
+members = ["heavenly-core", "heavenly-geo", "heavenly-spice", "heavenly-orbit", "diagrams"]
 
 [workspace.package]
+# One minor version per milestone: M1 = 0.1, M2 = 0.2, M3 = 0.3, ...
+version = "0.3.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/sevki/heavenly"
