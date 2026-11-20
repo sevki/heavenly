@@ -1,10 +1,12 @@
 # Roadmap
 
+Each milestone is released as the next minor version; see `CHANGELOG.md`.
+
 | Milestone | Crates | Status |
 |-----------|--------|--------|
-| **M1** Core types and invariants | `heavenly-core` | ✅ done |
-| **M2** Earth and Moon | `heavenly-geo`, `heavenly-spice` | ✅ done |
-| **M3** Moving objects | `heavenly-orbit` | planned |
+| **M1** Core types and invariants | `heavenly-core` | ✅ done (0.1) |
+| **M2** Earth and Moon | `heavenly-geo`, `heavenly-spice` | ✅ done (0.2) |
+| **M3** Moving objects | `heavenly-orbit`, `SpkLocator` | ✅ done (0.3) |
 | **M4** Local frames and identity | `heavenly-id` | planned |
 | **M5** Spatial and operational queries | `heavenly-topology` | planned |
 

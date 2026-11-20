@@ -16,7 +16,7 @@ a lunar base or a spacecraft in transit.
 |-----------|-------|-------|
 | M1 — Core types and invariants | `heavenly-core` | implemented |
 | M2 — Earth and Moon | `heavenly-geo`, `heavenly-spice` | implemented |
-| M3 — Moving objects | `heavenly-orbit` | planned |
+| M3 — Moving objects | `heavenly-orbit` | implemented |
 | M4 — Local frames and identity | `heavenly-id` | planned |
 | M5 — Spatial and operational queries | `heavenly-topology` | planned |
 
@@ -76,6 +76,21 @@ reference values (`heavenly-geo/tests/reference`).
   `MOON_ICRF`, `MOON_PA` and `MOON_ME` on a `FrameGraph`.
 * Reproduces SPICE to rounding on `de440s.bsp` (7e-5 m) and the lunar PCK
   (5e-12 rad).
+
+## `heavenly-orbit`
+
+* `kepler::propagate`: universal-variable two-body propagation, for any
+  eccentricity.
+* `ConicElements`: elements ↔ state vectors (SPICE `conics` / `oscelt`
+  conventions).
+* `TwoBodyLocator` and `SampledTrajectory`: locators for moving objects, with
+  explicit `OutsideCoverage` / `DataGap` errors.
+* Matches SPICE `prop2b` / `conics` / `oscelt` to about 1e-12 relative.
+
+## Versioning
+
+All crates share one version, and the minor version increases with each
+milestone (currently **0.3.0** = M3). See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 

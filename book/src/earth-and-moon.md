@@ -24,12 +24,22 @@ east-positive. Built-in ellipsoids:
 | `MOON` | 1 737 400 | sphere |
 | `MARS` | 3 396 190 | ≈169.9 (b = 3 376 200 m) |
 
+<figure class="hv-figure">
+{{#include diagrams/geodetic.svg}}
+<figcaption>Geodetic latitude φ is measured along the ellipsoid normal, not from the centre; height h is along the same normal. Computed with <code>Geodetic</code> on an ellipsoid with exaggerated flattening.</figcaption>
+</figure>
+
 `Geodetic::from_cartesian` uses Heikkinen's closed-form solution, with no
 iteration. `Geodetic::enu_to_body_fixed` builds the transform for a local
 east-north-up frame, which is how facility, building and antenna frames are
 attached to a body.
 
 ## Earth orientation (ITRF ↔ GCRF)
+
+<figure class="hv-figure">
+{{#include diagrams/earth-orientation.svg}}
+<figcaption>The rotation from GCRS to ITRS, one factor per physical effect.</figcaption>
+</figure>
 
 `earth::register(&mut graph, eop)` adds the ITRF → GCRF edge. The model follows
 the IERS 2010 CIO-based procedure:

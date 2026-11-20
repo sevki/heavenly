@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 400" class="hv-diagram" role="img" aria-labelledby="hv-daf-title">
+<title id="hv-daf-title">DAF and SPK segment layout</title>
+<style>.hv-daf-sfg{stroke:currentColor;stroke-width:1.5}.hv-daf-sac{stroke:var(--links,#1f6feb);stroke-width:2}.hv-daf-sac2{stroke:#e8590c;stroke-width:2}.hv-daf-smu{stroke:var(--icons,#888);stroke-width:1}.hv-daf-ffg{fill:currentColor}.hv-daf-fac{fill:var(--links,#1f6feb)}.hv-daf-fac2{fill:#e8590c}.hv-daf-fmu{fill:var(--icons,#888)}.hv-daf-tfg{fill:currentColor}.hv-daf-tac{fill:var(--links,#1f6feb)}.hv-daf-tac2{fill:#e8590c}.hv-daf-tmu{fill:var(--icons,#888)}.hv-daf-bgfg{fill:var(--quote-bg,rgba(127,127,127,.12))}.hv-daf-bgac{fill:var(--quote-bg,rgba(127,127,127,.12))}.hv-daf-bgac2{fill:rgba(232,89,12,.12)}.hv-daf-bgmu{fill:rgba(127,127,127,.22)}.hv-daf-mono{font-family:var(--mono-font,monospace)}</style>
+<defs><marker id="hv-daf-arrow-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-daf-ffg"/></marker><marker id="hv-daf-arrow-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-daf-fac"/></marker><marker id="hv-daf-arrow-ac2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-daf-fac2"/></marker><marker id="hv-daf-arrow-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-daf-fmu"/></marker></defs>
+<text x="20.0" y="22.0" text-anchor="start" font-size="11.5" class="hv-daf-tmu">a DAF file is a sequence of 1024-byte records (SPK and binary PCK share the format)</text>
+<rect x="20.0" y="40.0" width="124.0" height="52.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="82.0" y="62.0" text-anchor="middle" font-size="12.5" class="hv-daf-tfg hv-daf-mono">file record</text>
+<text x="82.0" y="80.0" text-anchor="middle" font-size="10.5" class="hv-daf-tmu">ND, NI, FWARD, format</text>
+<rect x="150.0" y="40.0" width="84.0" height="52.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="192.0" y="62.0" text-anchor="middle" font-size="12.5" class="hv-daf-tfg hv-daf-mono">comments</text>
+<text x="192.0" y="80.0" text-anchor="middle" font-size="10.5" class="hv-daf-tmu">text</text>
+<rect x="240.0" y="40.0" width="144.0" height="52.0" rx="6" class="hv-daf-sac hv-daf-bgac"/>
+<text x="312.0" y="62.0" text-anchor="middle" font-size="12.5" class="hv-daf-tfg hv-daf-mono">summary</text>
+<text x="312.0" y="80.0" text-anchor="middle" font-size="10.5" class="hv-daf-tmu">next, prev, n, summaries</text>
+<rect x="390.0" y="40.0" width="94.0" height="52.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="437.0" y="62.0" text-anchor="middle" font-size="12.5" class="hv-daf-tfg hv-daf-mono">names</text>
+<text x="437.0" y="80.0" text-anchor="middle" font-size="10.5" class="hv-daf-tmu">segment names</text>
+<rect x="490.0" y="40.0" width="164.0" height="52.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="572.0" y="62.0" text-anchor="middle" font-size="12.5" class="hv-daf-tfg hv-daf-mono">data …</text>
+<text x="572.0" y="80.0" text-anchor="middle" font-size="10.5" class="hv-daf-tmu">f64 words</text>
+<text x="20.0" y="156.0" text-anchor="start" font-size="11.5" class="hv-daf-tmu">one segment (Chebyshev type 2): fixed-size records, then a 4-word directory</text>
+<rect x="20.0" y="170.0" width="91.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="65.5" y="193.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">record 1</text>
+<rect x="115.0" y="170.0" width="91.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="160.5" y="193.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">record 2</text>
+<rect x="210.0" y="170.0" width="46.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="233.0" y="193.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">…</text>
+<rect x="260.0" y="170.0" width="91.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="305.5" y="193.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">record N</text>
+<rect x="355.0" y="170.0" width="66.0" height="36.0" rx="6" class="hv-daf-sac2 hv-daf-bgac2"/>
+<text x="388.0" y="193.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">INIT</text>
+<rect x="425.0" y="170.0" width="71.0" height="36.0" rx="6" class="hv-daf-sac2 hv-daf-bgac2"/>
+<text x="460.5" y="193.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">INTLEN</text>
+<rect x="500.0" y="170.0" width="66.0" height="36.0" rx="6" class="hv-daf-sac2 hv-daf-bgac2"/>
+<text x="533.0" y="193.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">RSIZE</text>
+<rect x="570.0" y="170.0" width="46.0" height="36.0" rx="6" class="hv-daf-sac2 hv-daf-bgac2"/>
+<text x="593.0" y="193.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">N</text>
+<line x1="292.0" y1="92.0" x2="24.0" y2="168.0" class="hv-daf-sac" marker-end="url(#hv-daf-arrow-ac)"/>
+<line x1="332.0" y1="92.0" x2="612.0" y2="168.0" class="hv-daf-sac" marker-end="url(#hv-daf-arrow-ac)"/>
+<text x="312.0" y="108.0" text-anchor="middle" font-size="11" class="hv-daf-tac">start / end word address</text>
+<text x="20.0" y="276.0" text-anchor="start" font-size="11.5" class="hv-daf-tmu">one record covers [MID − RADIUS, MID + RADIUS]; x, y, z each have degree + 1 coefficients</text>
+<rect x="20.0" y="290.0" width="66.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="53.0" y="313.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">MID</text>
+<rect x="90.0" y="290.0" width="76.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="128.0" y="313.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">RADIUS</text>
+<rect x="170.0" y="290.0" width="156.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="248.0" y="313.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">x: c₀ … cₙ</text>
+<rect x="330.0" y="290.0" width="156.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="408.0" y="313.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">y: c₀ … cₙ</text>
+<rect x="490.0" y="290.0" width="156.0" height="36.0" rx="6" class="hv-daf-sfg hv-daf-bgfg"/>
+<text x="568.0" y="313.0" text-anchor="middle" font-size="12" class="hv-daf-tfg hv-daf-mono">z: c₀ … cₙ</text>
+<line x1="70.0" y1="208.0" x2="60.0" y2="288.0" class="hv-daf-smu" marker-end="url(#hv-daf-arrow-mu)"/>
+<text x="20.0" y="360.0" text-anchor="start" font-size="11.5" class="hv-daf-tfg">record index = ⌊(ET − INIT) / INTLEN⌋;  position = Σ cₖ Tₖ((ET − MID) / RADIUS);  velocity by differentiating the series</text>
+<text x="20.0" y="384.0" text-anchor="start" font-size="11" class="hv-daf-tmu">type 3 stores six series (position and velocity); PCK type 2 stores three Euler angles</text>
+</svg>

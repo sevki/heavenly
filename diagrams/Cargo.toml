@@ -1,0 +1,13 @@
+[package]
+name = "heavenly-diagrams"
+version = "0.0.0"
+description = "Generates the book's SVG diagrams from the heavenly crates"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+heavenly-core = { path = "../heavenly-core" }
+heavenly-geo = { path = "../heavenly-geo" }
+heavenly-orbit = { path = "../heavenly-orbit" }

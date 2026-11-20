@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 210" class="hv-diagram" role="img" aria-labelledby="hv-eo-title">
+<title id="hv-eo-title">Earth orientation chain</title>
+<style>.hv-eo-sfg{stroke:currentColor;stroke-width:1.5}.hv-eo-sac{stroke:var(--links,#1f6feb);stroke-width:2}.hv-eo-sac2{stroke:#e8590c;stroke-width:2}.hv-eo-smu{stroke:var(--icons,#888);stroke-width:1}.hv-eo-ffg{fill:currentColor}.hv-eo-fac{fill:var(--links,#1f6feb)}.hv-eo-fac2{fill:#e8590c}.hv-eo-fmu{fill:var(--icons,#888)}.hv-eo-tfg{fill:currentColor}.hv-eo-tac{fill:var(--links,#1f6feb)}.hv-eo-tac2{fill:#e8590c}.hv-eo-tmu{fill:var(--icons,#888)}.hv-eo-bgfg{fill:var(--quote-bg,rgba(127,127,127,.12))}.hv-eo-bgac{fill:var(--quote-bg,rgba(127,127,127,.12))}.hv-eo-bgac2{fill:rgba(232,89,12,.12)}.hv-eo-bgmu{fill:rgba(127,127,127,.22)}.hv-eo-mono{font-family:var(--mono-font,monospace)}</style>
+<defs><marker id="hv-eo-arrow-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-eo-ffg"/></marker><marker id="hv-eo-arrow-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-eo-fac"/></marker><marker id="hv-eo-arrow-ac2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-eo-fac2"/></marker><marker id="hv-eo-arrow-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-eo-fmu"/></marker></defs>
+<rect x="15.0" y="56.0" width="110.0" height="28.0" rx="6" class="hv-eo-sac hv-eo-bgac"/>
+<text x="70.0" y="74.5" text-anchor="middle" font-size="13" class="hv-eo-tfg hv-eo-mono">GCRS</text>
+<rect x="195.0" y="56.0" width="110.0" height="28.0" rx="6" class="hv-eo-sfg hv-eo-bgfg"/>
+<text x="250.0" y="74.5" text-anchor="middle" font-size="13" class="hv-eo-tfg hv-eo-mono">CIRS</text>
+<rect x="375.0" y="56.0" width="110.0" height="28.0" rx="6" class="hv-eo-sfg hv-eo-bgfg"/>
+<text x="430.0" y="74.5" text-anchor="middle" font-size="13" class="hv-eo-tfg hv-eo-mono">TIRS</text>
+<rect x="555.0" y="56.0" width="110.0" height="28.0" rx="6" class="hv-eo-sac hv-eo-bgac"/>
+<text x="610.0" y="74.5" text-anchor="middle" font-size="13" class="hv-eo-tfg hv-eo-mono">ITRS</text>
+<line x1="127.0" y1="70.0" x2="193.0" y2="70.0" class="hv-eo-sfg" marker-end="url(#hv-eo-arrow-fg)"/>
+<text x="160.0" y="110.0" text-anchor="middle" font-size="11.5" class="hv-eo-tac2">bias-precession-nutation (X, Y, s)</text>
+<line x1="307.0" y1="70.0" x2="373.0" y2="70.0" class="hv-eo-sfg" marker-end="url(#hv-eo-arrow-fg)"/>
+<text x="340.0" y="110.0" text-anchor="middle" font-size="11.5" class="hv-eo-tac2">Earth Rotation Angle (UT1)</text>
+<line x1="487.0" y1="70.0" x2="553.0" y2="70.0" class="hv-eo-sfg" marker-end="url(#hv-eo-arrow-fg)"/>
+<text x="520.0" y="110.0" text-anchor="middle" font-size="11.5" class="hv-eo-tac2">polar motion (xp, yp, s′)</text>
+<text x="70.0" y="44.0" text-anchor="middle" font-size="11" class="hv-eo-tmu">FrameId::GCRF</text>
+<text x="610.0" y="44.0" text-anchor="middle" font-size="11" class="hv-eo-tmu">FrameId::ITRF</text>
+<text x="20.0" y="160.0" text-anchor="start" font-size="12" class="hv-eo-tfg">M = W(xp, yp, s′) · R₃(ERA) · Q(X, Y, s)      (IERS 2010 CIO-based procedure, as SOFA c2t06a)</text>
+<text x="20.0" y="186.0" text-anchor="start" font-size="11" class="hv-eo-tmu">precession in full (IAU 2006), nutation truncated to 20 terms: 7.6 mas from SOFA over 1980–2050</text>
+</svg>

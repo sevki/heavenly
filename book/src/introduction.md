@@ -14,9 +14,14 @@ So `heavenly` never treats a name like `us-east-1c` or `lhr1` as a
 coordinate. It never assumes a single universal XYZ origin, and it never
 compares two positions unless they share a frame and an epoch.
 
+<figure class="hv-figure">
+{{#include diagrams/crates.svg}}
+<figcaption>The crates. Each depends only on <code>heavenly-core</code> (and <code>libm</code>).</figcaption>
+</figure>
+
 ## What exists today
 
-Milestones **M1** and **M2** are complete. The `heavenly-core` crate provides:
+Milestones **M1**–**M3** are complete (version 0.3). The `heavenly-core` crate provides:
 
 | Type | Purpose |
 |------|---------|
@@ -32,6 +37,9 @@ Milestones **M1** and **M2** are complete. The `heavenly-core` crate provides:
 [Earth, Moon and Mars](earth-and-moon.md). `heavenly-spice` reads JPL
 ephemerides and lunar orientation from SPICE kernels. See
 [Ephemerides](spice.md).
+
+`heavenly-orbit` adds two-body propagation, orbital elements and sampled
+trajectories. See [Orbits and trajectories](orbits.md).
 
 See the [roadmap](roadmap.md) for what comes next, and the
 [design proposal](design.md) for the full rationale.

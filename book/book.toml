@@ -9,5 +9,6 @@ src = "src"
 create-missing = false
 
 [output.html]
+additional-css = ["theme/heavenly.css"]
 git-repository-url = "https://github.com/sevki/heavenly"
 edit-url-template = "https://github.com/sevki/heavenly/edit/main/book/{path}"

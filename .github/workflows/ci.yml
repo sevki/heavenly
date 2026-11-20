@@ -35,7 +35,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - run: cargo clippy -p heavenly-core -p heavenly-geo -p heavenly-spice --no-default-features -- -D warnings
+      - run: cargo clippy -p heavenly-core -p heavenly-geo -p heavenly-spice -p heavenly-orbit --no-default-features -- -D warnings
 
   test:
     name: test (${{ matrix.os }})
@@ -49,7 +49,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --all-features
-      - run: cargo test -p heavenly-core -p heavenly-geo --no-default-features --features alloc
+      - run: cargo test -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --features alloc
 
   msrv:
     name: MSRV (1.70)
@@ -73,8 +73,8 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build -p heavenly-core -p heavenly-geo --no-default-features --target ${{ matrix.target }}
-      - run: cargo build -p heavenly-core -p heavenly-geo --no-default-features --features alloc --target ${{ matrix.target }}
+      - run: cargo build -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --target ${{ matrix.target }}
+      - run: cargo build -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --features alloc --target ${{ matrix.target }}
       - run: cargo build -p heavenly-spice --no-default-features --target ${{ matrix.target }}
 
   examples:
@@ -129,6 +129,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --workspace --no-deps --all-features
+
+  diagrams:
+    name: diagrams up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo run -p heavenly-diagrams
+      - name: Committed SVGs must match the generator
+        run: git diff --exit-code -- book/src/diagrams
 
   book:
     name: mdbook

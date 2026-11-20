@@ -27,11 +27,17 @@ the lunar south pole can be compared directly:
 
 The frame graph this builds is:
 
-```text
-SSB_ICRF ── GCRF ── ITRF ── london (ENU)
-   │
-   └── MOON_ICRF ── MOON_PA ── MOON_ME ── shackleton (ENU)
-```
+<figure class="hv-figure">
+{{#include diagrams/frame-graph.svg}}
+<figcaption>Frames registered by the example. The SPK supplies the translations to the barycentre, and the PCK and FK supply the lunar orientation.</figcaption>
+</figure>
+
+## The file format
+
+<figure class="hv-figure">
+{{#include diagrams/daf.svg}}
+<figcaption>How an SPK file is laid out, and how one Chebyshev record is evaluated.</figcaption>
+</figure>
 
 ## What is supported
 

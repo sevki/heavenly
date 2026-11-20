@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 300" class="hv-diagram" role="img" aria-labelledby="hv-crates-title">
+<title id="hv-crates-title">Crate architecture</title>
+<style>.hv-crates-sfg{stroke:currentColor;stroke-width:1.5}.hv-crates-sac{stroke:var(--links,#1f6feb);stroke-width:2}.hv-crates-sac2{stroke:#e8590c;stroke-width:2}.hv-crates-smu{stroke:var(--icons,#888);stroke-width:1}.hv-crates-ffg{fill:currentColor}.hv-crates-fac{fill:var(--links,#1f6feb)}.hv-crates-fac2{fill:#e8590c}.hv-crates-fmu{fill:var(--icons,#888)}.hv-crates-tfg{fill:currentColor}.hv-crates-tac{fill:var(--links,#1f6feb)}.hv-crates-tac2{fill:#e8590c}.hv-crates-tmu{fill:var(--icons,#888)}.hv-crates-bgfg{fill:var(--quote-bg,rgba(127,127,127,.12))}.hv-crates-bgac{fill:var(--quote-bg,rgba(127,127,127,.12))}.hv-crates-bgac2{fill:rgba(232,89,12,.12)}.hv-crates-bgmu{fill:rgba(127,127,127,.22)}.hv-crates-mono{font-family:var(--mono-font,monospace)}</style>
+<defs><marker id="hv-crates-arrow-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-crates-ffg"/></marker><marker id="hv-crates-arrow-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-crates-fac"/></marker><marker id="hv-crates-arrow-ac2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-crates-fac2"/></marker><marker id="hv-crates-arrow-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-crates-fmu"/></marker></defs>
+<text x="340.0" y="24.0" text-anchor="middle" font-size="12" class="hv-crates-tmu">your application: facilities, spacecraft, schedulers</text>
+<rect x="170.0" y="229.0" width="340.0" height="42.0" rx="6" class="hv-crates-sac hv-crates-bgac"/>
+<text x="340.0" y="247.0" text-anchor="middle" font-size="13" class="hv-crates-tfg hv-crates-mono">heavenly-core</text>
+<text x="340.0" y="263.0" text-anchor="middle" font-size="10.5" class="hv-crates-tmu">Epoch · FrameId · Transform · FrameGraph · Locator</text>
+<rect x="8.0" y="119.0" width="214.0" height="42.0" rx="6" class="hv-crates-sfg hv-crates-bgfg"/>
+<text x="115.0" y="137.0" text-anchor="middle" font-size="13" class="hv-crates-tfg hv-crates-mono">heavenly-geo</text>
+<text x="115.0" y="153.0" text-anchor="middle" font-size="10.5" class="hv-crates-tmu">ellipsoids · Earth/Moon/Mars orientation</text>
+<rect x="233.0" y="119.0" width="214.0" height="42.0" rx="6" class="hv-crates-sfg hv-crates-bgfg"/>
+<text x="340.0" y="137.0" text-anchor="middle" font-size="13" class="hv-crates-tfg hv-crates-mono">heavenly-spice</text>
+<text x="340.0" y="153.0" text-anchor="middle" font-size="10.5" class="hv-crates-tmu">SPK/PCK kernels · ephemerides</text>
+<rect x="458.0" y="119.0" width="214.0" height="42.0" rx="6" class="hv-crates-sfg hv-crates-bgfg"/>
+<text x="565.0" y="137.0" text-anchor="middle" font-size="13" class="hv-crates-tfg hv-crates-mono">heavenly-orbit</text>
+<text x="565.0" y="153.0" text-anchor="middle" font-size="10.5" class="hv-crates-tmu">two-body · elements · trajectories</text>
+<line x1="158.0" y1="161.0" x2="297.0" y2="229.0" class="hv-crates-sfg" marker-end="url(#hv-crates-arrow-fg)"/>
+<line x1="115.0" y1="44.0" x2="115.0" y2="117.0" class="hv-crates-smu" marker-end="url(#hv-crates-arrow-mu)"/>
+<line x1="340.0" y1="161.0" x2="340.0" y2="229.0" class="hv-crates-sfg" marker-end="url(#hv-crates-arrow-fg)"/>
+<line x1="340.0" y1="44.0" x2="340.0" y2="117.0" class="hv-crates-smu" marker-end="url(#hv-crates-arrow-mu)"/>
+<line x1="522.0" y1="161.0" x2="383.0" y2="229.0" class="hv-crates-sfg" marker-end="url(#hv-crates-arrow-fg)"/>
+<line x1="565.0" y1="44.0" x2="565.0" y2="117.0" class="hv-crates-smu" marker-end="url(#hv-crates-arrow-mu)"/>
+<text x="340.0" y="290.0" text-anchor="middle" font-size="11" class="hv-crates-tmu">arrows point from a crate to what it depends on; all are no_std</text>
+</svg>

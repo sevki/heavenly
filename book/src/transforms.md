@@ -13,6 +13,11 @@ transforms silently produce wrong velocities. `heavenly` therefore fixes it:
 | `origin_velocity_m_s` | `ṫ` | velocity of A's origin relative to B |
 | `angular_velocity_rad_s` | `ω` | angular velocity of A's axes relative to B's |
 
+<figure class="hv-figure">
+{{#include diagrams/transform.svg}}
+<figcaption>The four quantities of a <code>Transform</code> from A to B, all expressed along B's axes.</figcaption>
+</figure>
+
 A state `(p_A, v_A)` maps to:
 
 ```text
