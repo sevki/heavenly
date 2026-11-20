@@ -11,15 +11,16 @@ rust-version.workspace = true
 
 [features]
 default = ["std"]
-std = ["alloc", "heavenly-core/std"]
+std = ["alloc", "heavenly-core/std", "heavenly-orbit/std"]
 # Enables `find_windows`, which returns a `Vec`.
-alloc = ["heavenly-core/alloc"]
+alloc = ["heavenly-core/alloc", "heavenly-orbit/alloc"]
 
 [dependencies]
-heavenly-core = { version = "0.8.0", path = "../heavenly-core", default-features = false }
+heavenly-core = { version = "0.9.0", path = "../heavenly-core", default-features = false }
+# The analytic Sun and Moon series (heavenly_orbit::analytic).
+heavenly-orbit = { version = "0.9.0", path = "../heavenly-orbit", default-features = false }
 libm = "0.2"
 
 [dev-dependencies]
 heavenly-geo = { path = "../heavenly-geo" }
-heavenly-orbit = { path = "../heavenly-orbit" }
 heavenly-spice = { path = "../heavenly-spice" }

@@ -1,7 +1,7 @@
 {
   "name": "heavenly-playground",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "The heavenly book's playground, built on @heavenly/react",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@heavenly/react": "0.8.0",
+    "@heavenly/react": "0.9.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

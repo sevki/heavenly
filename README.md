@@ -17,7 +17,7 @@ a lunar base or a spacecraft in transit.
 
 ```toml
 [dependencies]
-heavenly = "0.8"
+heavenly = "0.9"
 ```
 
 ```rust
@@ -56,9 +56,9 @@ module behind a cargo feature, all on by default:
 | crate root | epochs (UTC with leap seconds, TAI, TT, TDB), frames, transforms, frame graph, locators | [Concepts](https://sevki.github.io/heavenly/concepts.html) |
 | `heavenly::geo` | ellipsoids, geodetic coordinates, ENU site frames, Earth orientation (ITRF ↔ GCRF) with IERS EOP tables, IAU Moon/Mars models | [Earth, Moon and Mars](https://sevki.github.io/heavenly/earth-and-moon.html) |
 | `heavenly::spice` | dependency-free reader for JPL SPK / binary PCK kernels (DE440, lunar orientation) | [Ephemerides](https://sevki.github.io/heavenly/spice.html) |
-| `heavenly::orbit` | two-body propagation, orbital elements, sampled trajectories with explicit coverage and gap errors; TLEs, OMMs and SGP4/SDP4; catalogues | [Orbits](https://sevki.github.io/heavenly/orbits.html), [SGP4](https://sevki.github.io/heavenly/sgp4.html), [Catalogues](https://sevki.github.io/heavenly/catalogs.html) |
+| `heavenly::orbit` | two-body propagation, orbital elements, sampled trajectories with explicit coverage and gap errors; TLEs, OMMs and SGP4/SDP4; catalogues; J2 secular motion and numerical propagation with J2–J6, drag, radiation pressure, the Sun and the Moon | [Orbits](https://sevki.github.io/heavenly/orbits.html), [Perturbations](https://sevki.github.io/heavenly/perturbations.html), [SGP4](https://sevki.github.io/heavenly/sgp4.html), [Catalogues](https://sevki.github.io/heavenly/catalogs.html) |
 | `heavenly::id` | stable identities, aliases, and a registry of facilities, racks and spacecraft with their own frames | [Identity](https://sevki.github.io/heavenly/identity.html) |
-| `heavenly::query` | light time, look angles, line of sight past the Earth or Moon, visibility windows, the Sun, shadows and eclipses | [Signals](https://sevki.github.io/heavenly/signals.html) |
+| `heavenly::query` | light time, look angles, line of sight past the Earth or Moon, visibility windows, the Sun, shadows and eclipses, probability of collision | [Signals](https://sevki.github.io/heavenly/signals.html), [Collision probability](https://sevki.github.io/heavenly/collision.html) |
 | `heavenly::topology` | failure domains and jurisdictions, as policy rather than coordinates | [Topology](https://sevki.github.io/heavenly/topology.html) |
 
 ## Checked against the references
@@ -79,6 +79,10 @@ the committed copies, and runs the comparisons on Linux x64 and arm64:
 | SGP4/SDP4, official verification set | Vallado's C++ | 1.5e-9 km |
 | SGP4 from OMM (KVN, JSON, CSV) | Vallado's C++ via `sgp4.omm` | 2.8e-10 km |
 | TEME → ITRF | Skyfield | 5.9e-9 m |
+| Numerical propagation, J2–J6, 1 day (LEO) | independent RK4 implementation | 2 mm |
+| Analytic Moon, 1950–2050 | DE440 via SPICE | 0.08° |
+| Analytic Earth pole, 1950–2050 | SOFA `xy06` | 0.17″ |
+| Probability of collision, 30 encounters | independent NumPy integration | 1.9e-11 relative |
 
 ## `no_std`
 
@@ -99,7 +103,7 @@ conformance suite (in Node, via `wasm-pack`). MSRV is Rust 1.70. See
 ## Versioning
 
 One version for the whole workspace. The minor version increases with each
-roadmap milestone (currently **0.8.0** = M8). See [`CHANGELOG.md`](CHANGELOG.md).
+roadmap milestone (currently **0.9.0** = M9 and M10, released together). See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 

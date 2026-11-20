@@ -45,8 +45,8 @@ pub fn walker_delta(
 }
 
 /// Earth's J2 (EGM2008, unnormalised) and the equatorial radius it goes with.
-const J2: f64 = 1.082_626_68e-3;
-const R_EQ: f64 = 6_378_137.0;
+const J2: f64 = crate::forces::EARTH_ZONALS[0];
+const R_EQ: f64 = crate::forces::EARTH_RADIUS_M;
 
 /// The rate at which a sun-synchronous orbit's node must turn: once per
 /// tropical year (365.242 19 days), in rad/s.
@@ -88,9 +88,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "alloc")]
     fn walker_delta_layout() {
         let e = Epoch::J2000;
-        let w: Vec<_> = walker_delta(24, 3, 1, 1.0, 7e6, 0.0, e).unwrap().collect();
+        let w: alloc::vec::Vec<_> = walker_delta(24, 3, 1, 1.0, 7e6, 0.0, e).unwrap().collect();
         assert_eq!(w.len(), 24);
         let tau = core::f64::consts::TAU;
         // Planes 120° apart; 8 per plane, 45° apart; 15° phase per plane.

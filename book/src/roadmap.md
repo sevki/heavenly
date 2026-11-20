@@ -1,6 +1,7 @@
 # Roadmap
 
-Each milestone is released as the next minor version; see `CHANGELOG.md`.
+Each milestone is released as the next minor version (M9 and M10 went out
+together as 0.9); see `CHANGELOG.md`.
 
 | Milestone | In `heavenly` | Status |
 |-----------|---------------|--------|
@@ -12,6 +13,8 @@ Each milestone is released as the next minor version; see `CHANGELOG.md`.
 | **M6** TLEs and SGP4 | `orbit::Tle`, `orbit::Sgp4`, `FrameId::TEME` | ✅ done (0.6) |
 | **M7** Earth orientation data, sunlight, batch operations | `geo::eop`, `query::{AnalyticSun, eclipses}`, `*_batch` with SIMD, `id::Registry` trait | ✅ done (0.7) |
 | **M8** Catalogues and constellations | `orbit::{Omm, Catalog}`, `query::catalog`, `design::walker_delta` | ✅ done (0.8) |
+| **M9** Perturbations | `orbit::{NumericalPropagator, ForceModel, SecularJ2Locator, analytic}`, `query::AnalyticMoon` | ✅ done (0.9) |
+| **M10** Covariance and collision probability | `Covariance`, `UncertainState`, `orbit::uncertainty`, `query::collision_probability` | ✅ done (0.9) |
 
 ## Open design questions
 
@@ -21,7 +24,12 @@ These questions from the [design proposal](design.md) are still open:
 2. Whether `FrameResolver` should be object-safe or async, or split into a sync
    core and an async loading layer.
 3. The canonical time scale for serialised states.
-4. Covariance attached to states.
-5. Validity intervals and accuracy bounds on transforms.
-6. A URI scheme for objects, frames and coordinates.
-7. Scope of relativistic support.
+4. Validity intervals and accuracy bounds on transforms.
+5. A URI scheme for objects, frames and coordinates.
+6. Scope of relativistic support.
+
+Settled: covariance attached to states (M10). A covariance travels beside
+the state as an `UncertainState`, not inside `StateVector`, so that exact
+states stay small and `Copy` and their struct literals keep working; it
+follows the state through frames (`to_frame`) and time
+(`propagate_uncertain`).

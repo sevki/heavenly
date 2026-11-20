@@ -4,9 +4,76 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
-## Unreleased
+## 0.9.0: M9, perturbations, and M10, covariance and collision probability
+
+Both milestones are released together, so this version covers two roadmap
+steps. Upgrading from 0.8 needs no code changes: everything is new API.
+The one structural change is that `heavenly-query` now depends on
+`heavenly-orbit` for the analytic Sun.
 
 ### Added
+- M10:
+  - `heavenly::Covariance`, a 6×6 position/velocity covariance checked
+    symmetric and positive semi-definite. It has `diagonal`, `transformed`
+    (`J C Jᵀ`), `plus`, `sigmas`, and `to_rtn`/`from_rtn` for the
+    radial–transverse–normal axes of conjunction data messages.
+  - `heavenly::UncertainState` (a state with its covariance). `to_frame`
+    moves the covariance through the transform's exact Jacobian; it
+    matches a finite-difference Jacobian of GCRF → ITRF.
+  - `heavenly::orbit::uncertainty`: `state_transition_matrix` (central
+    differences with Richardson extrapolation, for any propagator) and
+    `propagate_uncertain`; also `NumericalPropagator::propagate_uncertain`.
+    Checked for symplecticity (2e-7 over a day), against Clohessy–Wiltshire
+    (exact to the metre), and against Monte Carlo (0.5 %).
+  - `heavenly::query::collision_probability`: the short-encounter
+    probability of collision, from two uncertain states and a hard-body
+    radius. It also reports the encounter-plane σ and the miss in σ. It
+    matches the closed form (1e-10), an independent NumPy implementation
+    (1.9e-11 over 30 encounters) and 2 million Monte Carlo samples.
+  - Example `collision`: tracking covariances, screening, propagation to
+    the time of closest approach, the probability, and its dilution.
+  - Book: a *Covariance and collision probability* chapter.
+- `heavenly::orbit::NumericalPropagator`: integrates an orbit in GCRF under
+  a `ForceModel`, with an adaptive Dormand–Prince 5(4) integrator that lands
+  on each requested epoch. It has `propagate`, `for_each` (one pass through
+  many epochs, either side of the start), `sample` (to a
+  `SampledTrajectory`), and `Locator`. The default `Tolerance` is 1e-13,
+  about 1 mm per day in a low orbit. A re-entry is an error, not a state
+  underground.
+- `heavenly::orbit::forces`: `ForceModel` (`two_body`, `earth_j2`,
+  `earth`), with:
+  - `Zonal` gravity to J6 (EGM2008) about the Earth's precessing and
+    nutating axis;
+  - `Drag` (Vallado's exponential atmosphere, turning with the Earth);
+  - `RadiationPressure` (a cannonball in a cylindrical shadow);
+  - `ThirdBody` Sun and Moon.
+- `heavenly::orbit::SecularJ2Locator`: a conic whose node, periapsis and
+  mean anomaly advance at the J2 secular rates, as cheap as two-body.
+  `earth_from_osculating` removes J2's short-period term from the
+  semi-major axis (Kozai). Without it, elements taken from a state drift
+  1,300 km a day in a low orbit; with it, the secular orbit stays within
+  6 km of the numerical one over a day.
+- `heavenly::orbit::analytic`:
+  - `sun_position_m` (moved from `heavenly-query`);
+  - `moon_position_m` (Montenbruck & Gill: 0.08° and 0.13 % against DE440
+    over 1950–2050);
+  - `earth_pole` (IAU 2006 precession and the main nutation terms: 0.17″
+    against SOFA).
+- `heavenly::query::AnalyticMoon`, a `Locator` for the Moon that needs no
+  kernels.
+- Conformance (`heavenly-orbit/tests/numerical.rs`, fixtures from
+  `generate_numerical.py`):
+  - the zonal field against explicit Legendre polynomials (5e-16);
+  - whole orbits against an independent RK4 implementation with DE440 and
+    SOFA (2 mm per day with the same forces; 0.35 m per day in a low orbit
+    with the analytic series);
+  - conservation of energy and axial angular momentum;
+  - drag decay against the analytic rate (0.3 %).
+- Book: a [Perturbations](book/src/perturbations.md) chapter, with measured
+  accuracy and cost.
+- Playground: a **Dynamics** menu that moves the slider orbit as a fixed
+  conic, under J2 secular rates, or by numerical integration with the full
+  force model.
 - `FrameGraph::remove_edge`, which removes the edge between two frames in
   either direction. With `add_fixed`, it moves a frame such as a ground
   station.

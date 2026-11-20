@@ -5,6 +5,7 @@
 export { Heavenly, loadHeavenly } from "./wasm.js";
 export type {
   Constellation,
+  Dynamics,
   Elements,
   OrbitInfo,
   Pass,

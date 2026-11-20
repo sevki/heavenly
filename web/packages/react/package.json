@@ -1,6 +1,6 @@
 {
   "name": "@heavenly/react",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "React components and hooks for the heavenly coordinate library, running in WebAssembly and drawn with WebGL2",
   "license": "MIT OR Apache-2.0",
   "repository": {

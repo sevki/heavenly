@@ -34,6 +34,14 @@ export interface PathPoint {
   sunlit: number;
 }
 
+/**
+ * How slider orbits move: a fixed conic, the conic turned at the Earth's J2
+ * secular rates, or numerical integration with J2–J6, drag, solar
+ * radiation pressure, the Sun and the Moon.
+ */
+export type Dynamics = "two-body" | "j2" | "full";
+const DYNAMICS: Dynamics[] = ["two-body", "j2", "full"];
+
 /** A ground station: where elevations, passes and the Sun's elevation are computed from. */
 export interface Station {
   name: string;
@@ -156,6 +164,20 @@ export class Heavenly {
   /** Switches to a two-body orbit with these elements, at the current epoch. */
   setElements(e: Elements): void {
     this.p.setOrbit(e.periapsisAltitudeKm, e.eccentricity, e.inclinationDeg, e.raanDeg, e.argPeriapsisDeg, e.meanAnomalyDeg ?? 0);
+  }
+
+  /** Chooses how slider orbits move. A TLE keeps SGP4. */
+  setDynamics(d: Dynamics): void {
+    this.p.setDynamics(DYNAMICS.indexOf(d));
+  }
+
+  /**
+   * The span (seconds after the epoch) that queries will cover. With "full"
+   * dynamics the orbit is integrated over it, on first use, and a query
+   * outside it throws.
+   */
+  setWindow(t0: number, t1: number): void {
+    this.p.setWindow(t0, t1);
   }
 
   /** Moves the ground station (London by default). */

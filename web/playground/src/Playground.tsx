@@ -9,6 +9,7 @@ import {
   useClock,
   useHeavenly,
   useLand,
+  type Dynamics,
   type Elements,
   type Heavenly,
   type Snapshot,
@@ -67,9 +68,10 @@ function fmtTime(s: number): string {
 
 // Points the model at `source` and the station, and reads what does not
 // change with time over the window [start, start + span].
-function prepare(h: Heavenly, source: Source, station: Station, start: number) {
+function prepare(h: Heavenly, source: Source, station: Station, start: number, dynamics: Dynamics) {
   if (source.kind === "elements") {
     h.setEpoch(parseEpoch(source.epoch));
+    h.setDynamics(dynamics);
     h.setElements(elementsOf(source.sliders));
   } else {
     h.setTle(source.text);
@@ -77,6 +79,8 @@ function prepare(h: Heavenly, source: Source, station: Station, start: number) {
   h.setStation(station);
   const info = h.info();
   const span = source.kind === "tle" ? 2 * DAY : Math.min(Math.max(3 * info.periodS, 3 * 3600), 2 * DAY);
+  // With "full" dynamics this is the span the orbit is integrated over.
+  h.setWindow(start, start + span);
   return {
     info,
     span,
@@ -102,16 +106,17 @@ export function Playground({ wasmUrl, landUrl }: { wasmUrl?: string; landUrl: st
   // track and passes begins, in seconds after the epoch.
   const [live, setLive] = useState(false);
   const [start, setStart] = useState(0);
+  const [dynamics, setDynamics] = useState<Dynamics>("two-body");
   const [note, setNote] = useState("");
 
   const orbit = useMemo(() => {
     if (!heavenly) return null;
     try {
-      return { ok: prepare(heavenly, source, station, start) } as const;
+      return { ok: prepare(heavenly, source, station, start, dynamics) } as const;
     } catch (e) {
       return { err: message(e) } as const;
     }
-  }, [heavenly, source, station, start]);
+  }, [heavenly, source, station, start, dynamics]);
   const ready = orbit && "ok" in orbit ? orbit.ok : null;
   const span = ready?.span ?? 10800;
   const clock = useClock(live ? 1 : speed, span, start);
@@ -161,7 +166,7 @@ export function Playground({ wasmUrl, landUrl }: { wasmUrl?: string; landUrl: st
       setSource({ kind: "tle", text });
       setStart(0);
       clock.setT(0);
-      setNote("Propagating the TLE with SGP4. Move a slider or pick a preset to go back to two-body elements.");
+      setNote("Propagating the TLE with SGP4. Move a slider or pick a preset to go back to the slider elements.");
     } catch (e) {
       setNote(message(e));
     }
@@ -270,6 +275,14 @@ export function Playground({ wasmUrl, landUrl }: { wasmUrl?: string; landUrl: st
         </label>
         <label>
           Epoch (UTC) <input type="datetime-local" step={60} value={epochText} onChange={(e) => applyElements(sl, e.target.value)} />
+        </label>
+        <label title={tle ? "A TLE is propagated with SGP4, which has its own perturbations" : undefined}>
+          Dynamics{" "}
+          <select value={dynamics} disabled={tle} onChange={(e) => setDynamics(e.target.value as Dynamics)}>
+            <option value="two-body">Two-body (fixed conic)</option>
+            <option value="j2">J2 secular (plane and apsides turn)</option>
+            <option value="full">Full: J2–J6, drag, Sun, Moon (numerical)</option>
+          </select>
         </label>
       </div>
       <div className="hv-tabs" role="tablist" aria-label="Ground station">

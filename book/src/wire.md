@@ -4,7 +4,7 @@ To send states between processes or store them compactly, enable the
 `jetstream` feature:
 
 ```toml
-heavenly = { version = "0.8", features = ["jetstream"] }
+heavenly = { version = "0.9", features = ["jetstream"] }
 ```
 
 The feature is new in 0.6.0.
