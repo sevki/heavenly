@@ -5,6 +5,8 @@ description = "Ellipsoids, geodetic coordinates and body orientation models for 
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://sevki.github.io/heavenly/api/heavenly_geo/"
 rust-version.workspace = true
 
 [features]

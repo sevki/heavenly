@@ -5,6 +5,8 @@ description = "Reader for SPICE SPK and binary PCK kernels (JPL DE ephemerides) 
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://sevki.github.io/heavenly/api/heavenly_spice/"
 rust-version.workspace = true
 
 [features]

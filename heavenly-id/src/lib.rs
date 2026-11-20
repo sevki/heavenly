@@ -1,5 +1,7 @@
 //! Stable identities, aliases and local frames for `heavenly`.
 //!
+//! [Book](https://sevki.github.io/heavenly/) · [Playground](https://sevki.github.io/heavenly/playground.html) · [API docs](https://sevki.github.io/heavenly/api/heavenly_id/)
+//!
 //! **Identity is stable; position is time-dependent.** A [`Registry`] keeps
 //! these apart:
 //!

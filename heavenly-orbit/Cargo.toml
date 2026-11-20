@@ -5,6 +5,8 @@ description = "Two-body propagation, orbital elements and sampled trajectories f
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://sevki.github.io/heavenly/api/heavenly_orbit/"
 rust-version.workspace = true
 
 [features]

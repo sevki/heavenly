@@ -1,6 +1,8 @@
 //! A dependency-free reader for NAIF SPICE kernels, connecting JPL
 //! ephemerides to `heavenly` frames.
 //!
+//! [Book](https://sevki.github.io/heavenly/) · [Playground](https://sevki.github.io/heavenly/playground.html) · [API docs](https://sevki.github.io/heavenly/api/heavenly_spice/)
+//!
 //! * [`Spk`]: SPK ephemerides, types 2 and 3 (Chebyshev position, and
 //!   position + velocity). These are the types JPL's DE planetary and lunar
 //!   ephemerides use, e.g. `de440s.bsp`.

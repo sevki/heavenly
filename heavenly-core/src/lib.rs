@@ -2,6 +2,8 @@
 //! identifiers, state vectors, rigid frame transformations and the traits
 //! that tie them together.
 //!
+//! [Book](https://sevki.github.io/heavenly/) · [Playground](https://sevki.github.io/heavenly/playground.html) · [API docs](https://sevki.github.io/heavenly/api/heavenly_core/)
+//!
 //! **Identity is stable; position is time-dependent; reference frames provide
 //! meaning; placement topology is policy.**
 //!
