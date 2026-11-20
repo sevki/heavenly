@@ -4,10 +4,11 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
-## Unreleased
+## 0.9.0: M9, perturbations, and M10, covariance and collision probability
 
-M9, perturbations, and M10, covariance and collision probability.
-Everything is new API, except that `heavenly-query` now depends on
+Both milestones are released together, so this version covers two roadmap
+steps. Upgrading from 0.8 needs no code changes: everything is new API.
+The one structural change is that `heavenly-query` now depends on
 `heavenly-orbit` for the analytic Sun.
 
 ### Added

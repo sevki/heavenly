@@ -7,7 +7,7 @@ features off, its only external dependency is
 the modules you need:
 
 ```toml
-heavenly = { version = "0.8", default-features = false, features = ["geo", "orbit"] }
+heavenly = { version = "0.9", default-features = false, features = ["geo", "orbit"] }
 ```
 
 | Feature | Default | Enables | Needs a heap |

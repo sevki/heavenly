@@ -1,6 +1,7 @@
 # Roadmap
 
-Each milestone is released as the next minor version; see `CHANGELOG.md`.
+Each milestone is released as the next minor version (M9 and M10 went out
+together as 0.9); see `CHANGELOG.md`.
 
 | Milestone | In `heavenly` | Status |
 |-----------|---------------|--------|
@@ -12,8 +13,8 @@ Each milestone is released as the next minor version; see `CHANGELOG.md`.
 | **M6** TLEs and SGP4 | `orbit::Tle`, `orbit::Sgp4`, `FrameId::TEME` | ✅ done (0.6) |
 | **M7** Earth orientation data, sunlight, batch operations | `geo::eop`, `query::{AnalyticSun, eclipses}`, `*_batch` with SIMD, `id::Registry` trait | ✅ done (0.7) |
 | **M8** Catalogues and constellations | `orbit::{Omm, Catalog}`, `query::catalog`, `design::walker_delta` | ✅ done (0.8) |
-| **M9** Perturbations | `orbit::{NumericalPropagator, ForceModel, SecularJ2Locator, analytic}`, `query::AnalyticMoon` | ✅ done (unreleased) |
-| **M10** Covariance and collision probability | `Covariance`, `UncertainState`, `orbit::uncertainty`, `query::collision_probability` | ✅ done (unreleased) |
+| **M9** Perturbations | `orbit::{NumericalPropagator, ForceModel, SecularJ2Locator, analytic}`, `query::AnalyticMoon` | ✅ done (0.9) |
+| **M10** Covariance and collision probability | `Covariance`, `UncertainState`, `orbit::uncertainty`, `query::collision_probability` | ✅ done (0.9) |
 
 ## Open design questions
 

@@ -8,7 +8,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! heavenly = "0.8"
+//! heavenly = "0.9"
 //! ```
 //!
 //! The core types are at the crate root: [`Epoch`], [`FrameId`],
