@@ -11,6 +11,58 @@ use crate::{Epoch, FrameId, FrameResolver, StateVector, Vec3};
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct LocationId(pub u128);
 
+impl LocationId {
+    /// The 16 bytes of the ID, big-endian (the byte order of a UUID).
+    pub const fn to_bytes(self) -> [u8; 16] {
+        self.0.to_be_bytes()
+    }
+
+    /// Builds an ID from 16 big-endian bytes, such as a UUID's.
+    pub const fn from_bytes(b: [u8; 16]) -> LocationId {
+        LocationId(u128::from_be_bytes(b))
+    }
+
+    /// Parses 32 hexadecimal digits, optionally hyphenated as a UUID
+    /// (`8-4-4-4-12`). Case-insensitive. This accepts the output of both
+    /// `Display` and a UUID's canonical form.
+    pub fn parse(s: &str) -> Result<LocationId, crate::Error> {
+        let b = s.as_bytes();
+        let hyphenated = b.len() == 36;
+        if hyphenated {
+            for (i, c) in b.iter().enumerate() {
+                if matches!(i, 8 | 13 | 18 | 23) != (*c == b'-') {
+                    return Err(crate::Error::Parse("malformed UUID hyphenation"));
+                }
+            }
+        } else if b.len() != 32 {
+            return Err(crate::Error::Parse(
+                "a location ID is 32 hex digits or a hyphenated UUID",
+            ));
+        }
+        let mut v: u128 = 0;
+        for c in b.iter().filter(|c| **c != b'-') {
+            let d = (*c as char)
+                .to_digit(16)
+                .ok_or(crate::Error::Parse("non-hexadecimal digit in location ID"))?;
+            v = (v << 4) | d as u128;
+        }
+        Ok(LocationId(v))
+    }
+}
+
+impl core::str::FromStr for LocationId {
+    type Err = crate::Error;
+    fn from_str(s: &str) -> Result<LocationId, crate::Error> {
+        LocationId::parse(s)
+    }
+}
+
+impl From<u128> for LocationId {
+    fn from(v: u128) -> LocationId {
+        LocationId(v)
+    }
+}
+
 impl fmt::Display for LocationId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:032x}", self.0)

@@ -4,6 +4,29 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
+## 0.4.0: M4, local frames and identity
+
+### Added
+- `heavenly-id`, a new crate:
+  - `Registry` of entities (sites, buildings, rooms, racks, devices,
+    spacecraft, modules…) keyed by stable `LocationId`;
+  - `Alias` names that can be renamed or re-pointed without changing
+    identity;
+  - `Mount`s that attach each entity's local frame to its parent: fixed,
+    geodetic (ENU on a body), or on a trajectory with `Attitude::Inertial`
+    or `Attitude::Lvlh`;
+  - `register_frames` builds the frame-graph edges for the whole tree, and
+    `locate` and `locator` resolve any entity by ID or alias;
+  - explicit errors for duplicates, unknown keys, missing parents, cycles,
+    non-locatable groups and frame-code collisions.
+- `heavenly-core`: `LocationId::parse` and `FromStr` (32 hex digits or a
+  hyphenated UUID), plus `to_bytes`, `from_bytes` and `From<u128>`.
+- Project logo in the README, the book (introduction page and favicon) and
+  every crate's rustdoc (`html_logo_url` / `html_favicon_url`).
+- Book: an *Identity and local frames* chapter with a registry diagram, and
+  the design proposal's London-rack-to-orbiting-rack example
+  (`cargo run -p heavenly-id --example racks`).
+
 ## 0.3.0: M3, moving objects
 
 ### Added

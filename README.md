@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="book/src/images/logo.png" alt="heavenly logo: a gridded globe with a moon, a planet and an orbit" width="200">
+</p>
+
 # heavenly
 
 A Rust library for describing, transforming and resolving physical locations
@@ -18,7 +22,7 @@ a lunar base or a spacecraft in transit.
 | M1 — Core types and invariants | `heavenly-core` | implemented |
 | M2 — Earth and Moon | `heavenly-geo`, `heavenly-spice` | implemented |
 | M3 — Moving objects | `heavenly-orbit` | implemented |
-| M4 — Local frames and identity | `heavenly-id` | planned |
+| M4 — Local frames and identity | `heavenly-id` | implemented |
 | M5 — Spatial and operational queries | `heavenly-topology` | planned |
 
 ## `heavenly-core`
@@ -88,10 +92,20 @@ reference values (`heavenly-geo/tests/reference`).
   explicit `OutsideCoverage` / `DataGap` errors.
 * Matches SPICE `prop2b` / `conics` / `oscelt` to about 1e-12 relative.
 
+## `heavenly-id`
+
+* `LocationId` identity (UUID-compatible), `Alias` names such as
+  `dc:lhr:01/hall-2/rack-07`, and a `Registry` that resolves either one.
+* Entities mount local frames in their parents: fixed (rooms, racks,
+  modules), geodetic (sites on a body), or on a trajectory with inertial or
+  LVLH attitude (spacecraft).
+* `register_frames` turns the tree into frame-graph edges, so any rack can
+  be located in any frame.
+
 ## Versioning
 
 All crates share one version, and the minor version increases with each
-milestone (currently **0.3.0** = M3). See [`CHANGELOG.md`](CHANGELOG.md).
+milestone (currently **0.4.0** = M4). See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 

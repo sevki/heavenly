@@ -41,6 +41,10 @@
 //! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/sevki/heavenly/main/book/src/images/logo.png",
+    html_favicon_url = "https://raw.githubusercontent.com/sevki/heavenly/main/book/theme/favicon.png"
+)]
 #![forbid(unsafe_code)]
 #![warn(missing_debug_implementations)]
 
