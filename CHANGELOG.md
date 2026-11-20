@@ -28,6 +28,12 @@ within a milestone. Before 1.0, a minor bump may break the API.
   conformance tests, including those on real DE440 kernels, on Linux x64
   and arm64. It writes the worst differences to the job summary. The test
   matrix now covers Linux, macOS and Windows on both x64 and arm64.
+- CI: WebAssembly. A `wasm32-unknown-unknown` job builds `heavenly` without
+  std, with alloc and with std, plus every crate's tests and examples. A
+  `wasm-pack` job runs a portable conformance suite (`heavenly/tests/
+  conformance.rs`: SGP4, TEME, Earth orientation, two-body, SPK and light
+  time against their references, with the synthetic kernel compiled in)
+  in Node with wasm-bindgen-test. The same suite runs natively.
 - Optional `jetstream` feature (off by default): `heavenly::wire` implements
   [jetstream](https://github.com/sevki/jetstream)'s `WireFormat` for
   `Epoch`, `FrameId`, `LocationId`, `Vec3`, `Rotation`, `Transform` and

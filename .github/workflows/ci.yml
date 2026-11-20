@@ -108,6 +108,43 @@ jobs:
             echo "::endgroup::"
           done
 
+  wasm:
+    name: wasm32-unknown-unknown
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Without std or a heap (core modules)
+        run: cargo build -p heavenly --target wasm32-unknown-unknown --no-default-features --features geo,orbit,query
+      - name: With a heap, every no_std module
+        run: cargo build -p heavenly --target wasm32-unknown-unknown --no-default-features --features alloc,geo,orbit,query,spice,id,topology
+      - name: With std and every module (the default)
+        run: cargo build -p heavenly --target wasm32-unknown-unknown
+      - name: Every crate's tests and examples compile
+        run: cargo test --workspace --exclude heavenly-viz --exclude heavenly-diagrams --target wasm32-unknown-unknown --no-run
+
+  wasm-pack:
+    name: wasm-pack (conformance in Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The SOFA, SPICE, Vallado SGP4 and Skyfield checks, compiled to
+      # wasm32-unknown-unknown and run with wasm-bindgen-test.
+      - run: wasm-pack test --node heavenly --test conformance
+
   conformance:
     name: conformance
     uses: ./.github/workflows/conformance.yml
