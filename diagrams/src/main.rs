@@ -202,7 +202,7 @@ fn crates() -> String {
         (340.0, 62.0),
         330.0,
         "heavenly",
-        Some("heavenly = { git = \"https://github.com/sevki/heavenly\" }"),
+        Some("heavenly = \"0.5\"  ·  crates.io/crates/heavenly"),
         ACCENT,
     );
     s.arrow((340.0, 28.0), (340.0, 39.0), MUTED);

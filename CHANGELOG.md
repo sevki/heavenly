@@ -6,6 +6,10 @@ within a milestone. Before 1.0, a minor bump may break the API.
 
 ## Unreleased
 
+### Changed
+- The README and book now install from crates.io (`heavenly = "0.5"`), where
+  0.5.0 of every crate is published.
+
 ### Added
 - Optional `jetstream` feature (off by default): `heavenly::wire` implements
   [jetstream](https://github.com/sevki/jetstream)'s `WireFormat` for

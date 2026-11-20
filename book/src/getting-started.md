@@ -1,11 +1,15 @@
 # Getting started
 
-`heavenly` is not yet published to crates.io. Depend on it from Git:
+`heavenly` is on [crates.io](https://crates.io/crates/heavenly), with API docs
+on [docs.rs](https://docs.rs/heavenly):
 
 ```toml
 [dependencies]
-heavenly = { git = "https://github.com/sevki/heavenly" }
+heavenly = "0.5"
 ```
+
+To follow `main` instead, use
+`heavenly = { git = "https://github.com/sevki/heavenly" }`.
 
 That one crate gives you everything. The core types are at the root
 (`heavenly::Epoch`, `heavenly::FrameGraph`, …), and each area is a module:
