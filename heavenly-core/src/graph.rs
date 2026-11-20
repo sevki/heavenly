@@ -76,6 +76,16 @@ impl FrameGraph {
         self.add_edge(child, parent, move |_| Ok(transform))
     }
 
+    /// Removes the edge between `a` and `b`, whichever way it was registered.
+    /// Returns whether there was one. With [`add_fixed`](Self::add_fixed),
+    /// this moves a frame, such as a ground station the user relocates.
+    pub fn remove_edge(&mut self, a: FrameId, b: FrameId) -> bool {
+        let before = self.edges.len();
+        self.edges
+            .retain(|e| !((e.child == a && e.parent == b) || (e.child == b && e.parent == a)));
+        self.edges.len() != before
+    }
+
     /// Returns `(edge index, traversed child→parent)` steps from `source` to
     /// `destination`, by breadth-first search.
     fn path(&self, source: FrameId, destination: FrameId) -> Option<Vec<(usize, bool)>> {

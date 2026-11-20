@@ -18,6 +18,15 @@ const alt = s[8];
 assert.ok(alt > 410 && alt < 440, `altitude ${alt}`);
 assert.ok(Math.abs(Math.hypot(s[21], s[22], s[23]) - 1) < 1e-9, "Sun direction is a unit vector");
 
+// Moving the station changes the look angles but not the orbit; a bad
+// latitude throws and leaves the station alone.
+p.setStation(56.4532, 9.402, 0);
+const v = p.state(600);
+assert.equal(v[8], s[8]);
+assert.notEqual(v[9], s[9]);
+assert.throws(() => p.setStation(91, 0, 0), Error);
+assert.equal(p.state(600)[9], v[9]);
+
 // A TLE moves the epoch to the TLE's; a bad one throws a JavaScript error.
 p.setTle(
   "1 25544U 98067A   20194.88612269 -.00002218  00000-0 -31515-4 0  9992\n" +

@@ -278,7 +278,9 @@ export function drawMap(g: Renderer, text: CanvasRenderingContext2D, scene: MapS
   const covered = (k: number) => (cons ? cons.sitesCovered[k] > 0 : now.siteElevationsDeg[k] > 10);
   const pts: number[] = [];
   if (cons) for (const q of cons.satellites) point(pts, [q.lon, q.lat], q.sunlit < 0.5 ? rgba(c.muted) : rgba(c.accent), 8);
-  sites.forEach((site, k) => point(pts, [site.lon, site.lat], covered(k) ? rgba(c.hot) : rgba(c.fg), 6, true));
+  // A site that is also the station is drawn (and labelled) as the station.
+  const isStation = (site: Site) => site.lat === station.lat && site.lon === station.lon;
+  sites.forEach((site, k) => isStation(site) || point(pts, [site.lon, site.lat], covered(k) ? rgba(c.hot) : rgba(c.fg), 6, true));
   point(pts, [station.lon, station.lat], rgba(c.fg), 7);
   point(pts, [subsolar.lon, subsolar.lat], rgba(c.sun), 12);
   point(pts, [st.lon, st.lat], rgba(c.hot), 10);
@@ -288,6 +290,7 @@ export function drawMap(g: Renderer, text: CanvasRenderingContext2D, scene: MapS
   const X = (lon: number) => ((lon + 180) / 360) * w, Y = (lat: number) => ((90 - lat) / 180) * h;
   text.font = "11px sans-serif";
   sites.forEach((site, k) => {
+    if (isStation(site)) return;
     text.fillStyle = covered(k) ? c.hot : c.fg;
     text.fillText(site.name, X(site.lon) + 5, Y(site.lat) + 12);
   });

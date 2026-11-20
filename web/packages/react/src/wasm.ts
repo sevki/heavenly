@@ -34,10 +34,19 @@ export interface PathPoint {
   sunlit: number;
 }
 
+/** A ground station: where elevations, passes and the Sun's elevation are computed from. */
+export interface Station {
+  name: string;
+  lat: number;
+  lon: number;
+  /** Height above the WGS84 ellipsoid, metres. */
+  heightM?: number;
+}
+
 export interface TrackPoint {
   lat: number;
   lon: number;
-  /** Elevation from London, degrees. */
+  /** Elevation from the station, degrees. */
   elevationDeg: number;
   sunlit: number;
 }
@@ -52,7 +61,7 @@ export interface SatelliteState {
   lat: number;
   lon: number;
   altitudeKm: number;
-  /** From London. */
+  /** From the station. */
   elevationDeg: number;
   azimuthDeg: number;
   rangeKm: number;
@@ -61,7 +70,7 @@ export interface SatelliteState {
   periapsis: Vec3;
   sunlitFraction: number;
   shadow: ShadowKind;
-  /** The Sun's elevation at London, degrees. */
+  /** The Sun's elevation at the station, degrees. */
   sunElevationDeg: number;
   subsolar: { lat: number; lon: number };
   /** Unit vector towards the Sun, GCRF. */
@@ -149,6 +158,11 @@ export class Heavenly {
     this.p.setOrbit(e.periapsisAltitudeKm, e.eccentricity, e.inclinationDeg, e.raanDeg, e.argPeriapsisDeg, e.meanAnomalyDeg ?? 0);
   }
 
+  /** Moves the ground station (London by default). */
+  setStation(s: Station): void {
+    this.p.setStation(s.lat, s.lon, s.heightM ?? 0);
+  }
+
   /** Switches to a TLE propagated with SGP4; the epoch becomes the TLE's. */
   setTle(text: string): void {
     this.p.setTle(text);
@@ -206,7 +220,7 @@ export class Heavenly {
     return { subsolar: { lat: r[0], lon: r[1] }, points: chunk<[number, number]>(r.subarray(2), 2) };
   }
 
-  /** Passes over London above 10° between `t0` and `t1` (seconds after the epoch). */
+  /** Passes over the station above 10° between `t0` and `t1` (seconds after the epoch). */
   passes(t0: number, t1: number): Pass[] {
     return chunk<[number, number, number, number]>(this.p.passes(t0, t1), 4).map(([startS, endS, maxElevationDeg, visibleS]) => ({ startS, endS, maxElevationDeg, visibleS }));
   }

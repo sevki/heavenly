@@ -7,6 +7,19 @@ within a milestone. Before 1.0, a minor bump may break the API.
 ## Unreleased
 
 ### Added
+- `FrameGraph::remove_edge`, which removes the edge between two frames in
+  either direction. With `add_fixed`, it moves a frame such as a ground
+  station.
+- Playground:
+  - **Ground-station tabs**: London, each data centre, or your location
+    (the browser's Geolocation API, used only in the page). Elevation,
+    passes and the Sun's elevation follow the station.
+  - **Live mode**: time follows the wall clock at 1×. Slider orbits move
+    their epoch to now; a TLE is propagated to now, with a warning when its
+    epoch is more than two weeks away.
+- `@heavenly/react`: `Heavenly.setStation`, the `Station` type,
+  `currentPosition()`, and a `start` for `useClock`'s window.
+- `heavenly-viz`: `Model::set_station` (`setStation` in JavaScript).
 - `@heavenly/react` (`web/packages/react`): React components for the
   library. `<Globe>`, `<GroundTrack>` and `<PassTable>` draw with
   hand-written WebGL2. There are hooks (`useHeavenly`, `useClock`,

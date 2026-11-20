@@ -2,7 +2,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import { Layered, useGlCanvas } from "./canvas.js";
 import { drawGlobe, drawMap, type GlobeView, type Land } from "./draw.js";
 import { themeFromCss, type Theme } from "./gl.js";
-import type { Pass, PathPoint, Site, Snapshot, TrackPoint } from "./wasm.js";
+import type { Pass, PathPoint, Site, Snapshot, Station, TrackPoint } from "./wasm.js";
 
 const DEG = Math.PI / 180;
 
@@ -68,12 +68,13 @@ export interface GroundTrackProps {
   land?: Land | null;
   theme?: Theme;
   /** The ground station the track's elevations are from. */
-  station?: { name: string; lat: number; lon: number };
+  station?: Station;
   className?: string;
   style?: CSSProperties;
 }
 
-export const LONDON = { name: "London", lat: 51.5072, lon: -0.1276 };
+/** The model's default station. */
+export const LONDON: Station = { name: "London", lat: 51.5072, lon: -0.1276, heightM: 35 };
 
 /** The ground track on an equirectangular map, with the night side, coverage and sites. */
 export function GroundTrack({ snapshot, track, sites = [], land = null, theme, station = LONDON, className, style }: GroundTrackProps) {
