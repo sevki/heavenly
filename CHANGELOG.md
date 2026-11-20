@@ -4,13 +4,30 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
-## Unreleased
-
-### Changed
-- The README and book now install from crates.io (`heavenly = "0.5"`), where
-  0.5.0 of every crate is published.
+## 0.6.0: M6, TLEs and SGP4
 
 ### Added
+- `heavenly::orbit::Tle`: NORAD two-line element sets, with checksum,
+  line-number and catalogue-number checks, Alpha-5 catalogue numbers and
+  implied-decimal fields (`Tle::parse`, `Tle::parse_unchecked`, `checksum`).
+- `heavenly::orbit::Sgp4`: a port of Vallado's SGP4/SDP4 reference
+  implementation (AIAA 2006-6753, 2020 revision), including lunar–solar
+  perturbations and 12-hour and synchronous resonances. It supports WGS-72,
+  WGS-72 (old) and WGS-84 gravity and the improved and AFSPC modes, reports
+  the reference error codes (`Sgp4Error`), and is a `Locator`. It matches
+  Vallado's C++ to 1.5e-9 km over the official verification set in all four
+  gravity/mode combinations.
+- `FrameId::TEME` (code 4), and a TEME → ITRF edge in `earth::register`
+  (GMST 1982 plus polar motion), checked against Skyfield. `earth::gmst82`
+  and `earth::teme_to_itrf` are public.
+- Example `tle_passes`: ISS passes over London from a TLE.
+- Book chapter *TLEs and SGP4*.
+- CI: a conformance job (the old reference-data workflow, now also run on
+  every push and pull request) regenerates the SOFA, SPICE, Vallado SGP4
+  and Skyfield reference values, checks the committed copies, and runs the
+  conformance tests, including those on real DE440 kernels, on Linux x64
+  and arm64. It writes the worst differences to the job summary. The test
+  matrix now covers Linux, macOS and Windows on both x64 and arm64.
 - Optional `jetstream` feature (off by default): `heavenly::wire` implements
   [jetstream](https://github.com/sevki/jetstream)'s `WireFormat` for
   `Epoch`, `FrameId`, `LocationId`, `Vec3`, `Rotation`, `Transform` and
@@ -21,6 +38,9 @@ within a milestone. Before 1.0, a minor bump may break the API.
 - `FrameId::parse` / `FromStr` (the inverse of `Display`). It rejects the
   ambiguous bare `ICRF` / `J2000`.
 - `LocationId::hyphenated()`: the canonical UUID form.
+
+### Changed
+- The README and book install from crates.io.
 
 ## 0.5.0: M5, spatial and operational queries
 

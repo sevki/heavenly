@@ -42,6 +42,9 @@
 #![forbid(unsafe_code)]
 #![warn(missing_debug_implementations)]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 pub mod earth;
 mod ellipsoid;
 mod geodetic;

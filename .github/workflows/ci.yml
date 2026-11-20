@@ -38,11 +38,17 @@ jobs:
       - run: cargo clippy -p heavenly -p heavenly-core -p heavenly-geo -p heavenly-spice -p heavenly-orbit -p heavenly-id -p heavenly-query -p heavenly-topology --no-default-features -- -D warnings
 
   test:
-    name: test (${{ matrix.os }})
+    name: test (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - { name: linux x64, os: ubuntu-24.04 }
+          - { name: linux arm64, os: ubuntu-24.04-arm }
+          - { name: macos arm64, os: macos-15 }
+          - { name: macos x64, os: macos-15-intel }
+          - { name: windows x64, os: windows-2025 }
+          - { name: windows arm64, os: windows-11-arm }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -102,28 +108,9 @@ jobs:
             echo "::endgroup::"
           done
 
-  kernels:
-    name: JPL kernels (DE440)
-    runs-on: ubuntu-latest
-    env:
-      HEAVENLY_KERNELS: ${{ github.workspace }}/kernels
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions/cache@v4
-        with:
-          path: kernels
-          key: naif-de440s-moonpa200625-v1
-      - name: Download kernels
-        run: |
-          mkdir -p kernels
-          base=https://naif.jpl.nasa.gov/pub/naif/generic_kernels
-          [ -f kernels/de440s.bsp ] || curl -fsSL -o kernels/de440s.bsp $base/spk/planets/de440s.bsp
-          [ -f kernels/moon_pa_de440_200625.bpc ] || curl -fsSL -o kernels/moon_pa_de440_200625.bpc $base/pck/moon_pa_de440_200625.bpc
-      - name: Validate against real DE440 kernels (ephemeris, lunar orientation, light time)
-        run: cargo test -p heavenly-spice -p heavenly-query --test validation -- --ignored
-      - run: cargo run -p heavenly --example earth_moon
+  conformance:
+    name: conformance
+    uses: ./.github/workflows/conformance.yml
 
   docs:
     name: rustdoc

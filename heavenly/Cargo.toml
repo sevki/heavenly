@@ -40,13 +40,13 @@ topology = ["alloc", "dep:heavenly-topology"]
 jetstream = ["std", "heavenly-core/jetstream"]
 
 [dependencies]
-heavenly-core = { version = "0.5.0", path = "../heavenly-core", default-features = false }
-heavenly-geo = { version = "0.5.0", path = "../heavenly-geo", default-features = false, optional = true }
-heavenly-spice = { version = "0.5.0", path = "../heavenly-spice", default-features = false, optional = true }
-heavenly-orbit = { version = "0.5.0", path = "../heavenly-orbit", default-features = false, optional = true }
-heavenly-id = { version = "0.5.0", path = "../heavenly-id", default-features = false, optional = true }
-heavenly-query = { version = "0.5.0", path = "../heavenly-query", default-features = false, optional = true }
-heavenly-topology = { version = "0.5.0", path = "../heavenly-topology", default-features = false, optional = true }
+heavenly-core = { version = "0.6.0", path = "../heavenly-core", default-features = false }
+heavenly-geo = { version = "0.6.0", path = "../heavenly-geo", default-features = false, optional = true }
+heavenly-spice = { version = "0.6.0", path = "../heavenly-spice", default-features = false, optional = true }
+heavenly-orbit = { version = "0.6.0", path = "../heavenly-orbit", default-features = false, optional = true }
+heavenly-id = { version = "0.6.0", path = "../heavenly-id", default-features = false, optional = true }
+heavenly-query = { version = "0.6.0", path = "../heavenly-query", default-features = false, optional = true }
+heavenly-topology = { version = "0.6.0", path = "../heavenly-topology", default-features = false, optional = true }
 
 [package.metadata.docs.rs]
 all-features = true

@@ -194,3 +194,66 @@ fn earth_rotation_angle_at_j2000() {
     let era1 = earth::earth_rotation_angle(e, &eop).unwrap();
     assert!((era1 - era - earth::EARTH_ROTATION_RATE_RAD_S).abs() < 1e-12);
 }
+
+#[rustfmt::skip]
+#[path = "reference/teme_data.rs"]
+mod teme_data;
+
+/// The epoch whose UTC (= UT1 with zero EOP) Julian date is `jd`.
+fn epoch_from_utc_jd(jd: f64) -> heavenly_core::Epoch {
+    let j2000 = heavenly_core::Epoch::parse("2000-01-01T12:00:00Z").unwrap();
+    let naive = (jd - 2451545.0) * 86400.0;
+    let mut e = j2000.add_seconds(naive).unwrap();
+    for _ in 0..2 {
+        let leaps = e.tai_minus_utc_seconds().unwrap() - j2000.tai_minus_utc_seconds().unwrap();
+        e = j2000.add_seconds(naive + leaps as f64).unwrap();
+    }
+    e
+}
+
+#[test]
+fn gmst82_matches_sofa() {
+    let mut worst = 0.0f64;
+    for (jd, gmst) in teme_data::GMST82 {
+        let (g, rate) = earth::gmst82(epoch_from_utc_jd(*jd), &EarthOrientation::ZERO).unwrap();
+        let mut d = (g - gmst).abs();
+        d = d.min(std::f64::consts::TAU - d);
+        worst = worst.max(d);
+        assert!(d < 1e-12, "{jd}: {g} vs {gmst}");
+        assert!((rate - 7.292115855e-5).abs() < 1e-12, "{rate}");
+    }
+    eprintln!("worst GMST82 difference {worst:.1e} rad");
+}
+
+#[test]
+fn teme_to_itrf_matches_skyfield() {
+    use heavenly_core::{FrameGraph, FrameId, StateVector};
+    let (mut wr, mut wv) = (0.0f64, 0.0f64);
+    for (jd, xp, yp, r, v, ri, vi) in teme_data::TEME_TO_ITRF {
+        let epoch = epoch_from_utc_jd(*jd);
+        let eop = EarthOrientation {
+            ut1_minus_utc_s: 0.0,
+            xp_rad: *xp,
+            yp_rad: *yp,
+        };
+        let mut g = FrameGraph::new();
+        earth::register(&mut g, eop).unwrap();
+        let s = StateVector::new(
+            FrameId::TEME,
+            epoch,
+            Vec3::from(*r) * 1e3,
+            Vec3::from(*v) * 1e3,
+        );
+        let out = s.to_frame(FrameId::ITRF, &g).unwrap();
+        let dr = (out.position_m - Vec3::from(*ri) * 1e3).norm();
+        let dv = (out.velocity_m_s - Vec3::from(*vi) * 1e3).norm();
+        wr = wr.max(dr);
+        wv = wv.max(dv);
+        assert!(dr < 1e-7 && dv < 1e-10, "{jd}: {dr:e} m {dv:e} m/s");
+        // And back.
+        let back = out.to_frame(FrameId::TEME, &g).unwrap();
+        assert!((back.position_m - s.position_m).norm() < 1e-6);
+        assert!((back.velocity_m_s - s.velocity_m_s).norm() < 1e-9);
+    }
+    eprintln!("worst TEME→ITRF difference {wr:.1e} m, {wv:.1e} m/s");
+}

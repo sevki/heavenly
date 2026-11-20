@@ -11,6 +11,7 @@ This is the `heavenly::orbit` module of the `heavenly` crate (cargo feature `orb
 | `FixedLocator` | core | a fixed point in a frame |
 | `TwoBodyLocator` | orbit | Keplerian elements, propagated analytically |
 | `SampledTrajectory` | orbit | a table of states (tracking, OEM, a numerical propagator) |
+| `Sgp4` | orbit | a NORAD TLE, propagated with SGP4 ([TLEs and SGP4](sgp4.md)) |
 | `SpkLocator` | spice | a body in an SPK kernel |
 
 All of them answer the same question: *where is it, in frame X, at time T?*
