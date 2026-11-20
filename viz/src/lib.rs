@@ -7,12 +7,9 @@
 //! `FrameGraph` (`heavenly-core`), and the Sun, shadows, look angles and
 //! pass search (`heavenly-query`). The JavaScript only draws.
 //!
-//! The interface to JavaScript is a handful of `extern "C"` functions taking
-//! and returning numbers. Array results are written to an output buffer whose
-//! address JS reads with [`out_ptr`], so no binding generator is needed.
-//! [`Model`] holds the logic and is tested natively.
-
-use std::cell::RefCell;
+//! [`Model`] holds the logic and is tested natively. On `wasm32`, the
+//! `Playground` class exposes it to JavaScript through `wasm-bindgen`;
+//! `wasm-pack` builds it into the `@heavenly/react` npm package.
 
 use heavenly_core::{
     Epoch, Error, FrameGraph, FrameId, FrameResolver, Locator, Namespace, StateVector, TimeScale,
@@ -600,171 +597,139 @@ impl Model {
     }
 }
 
-// --- WebAssembly interface ---------------------------------------------------
+// --- WebAssembly interface (wasm-bindgen, built with wasm-pack) --------------
 
-thread_local! {
-    static MODEL: RefCell<Option<Model>> = const { RefCell::new(None) };
-    static OUT: RefCell<Vec<f64>> = const { RefCell::new(Vec::new()) };
-    static ERROR: RefCell<String> = const { RefCell::new(String::new()) };
-}
+#[cfg(target_arch = "wasm32")]
+mod bindings {
+    use super::{Error, Model, SITES};
+    use wasm_bindgen::prelude::*;
 
-fn with_model<T>(f: impl FnOnce(&mut Model) -> Result<T, Error>) -> Result<T, Error> {
-    MODEL.with(|m| {
-        let mut m = m.borrow_mut();
-        if m.is_none() {
-            *m = Some(Model::new()?);
+    fn js(e: Error) -> JsError {
+        JsError::new(&e.to_string())
+    }
+
+    /// The playground model: one epoch and one satellite (two-body elements
+    /// or a TLE through SGP4). Array results come back as `Float64Array`s;
+    /// errors are thrown as JavaScript `Error`s with the library's message.
+    #[wasm_bindgen]
+    pub struct Playground {
+        model: Model,
+    }
+
+    #[wasm_bindgen]
+    impl Playground {
+        #[wasm_bindgen(constructor)]
+        pub fn new() -> Result<Playground, JsError> {
+            Ok(Playground {
+                model: Model::new().map_err(js)?,
+            })
         }
-        f(m.as_mut().expect("initialised above"))
-    })
-}
 
-/// Stores an array result and returns its length; on error stores the message
-/// and returns 0.
-fn publish(r: Result<Vec<f64>, Error>) -> usize {
-    match r {
-        Ok(v) => {
-            let n = v.len();
-            OUT.with(|o| *o.borrow_mut() = v);
-            n
+        /// Sets the epoch from UTC calendar fields (seconds may be fractional).
+        #[wasm_bindgen(js_name = setEpoch)]
+        pub fn set_epoch(
+            &mut self,
+            y: i32,
+            mo: u32,
+            d: u32,
+            h: u32,
+            mi: u32,
+            s: f64,
+        ) -> Result<(), JsError> {
+            self.model.set_epoch(y, mo, d, h, mi, s).map_err(js)
         }
-        Err(e) => {
-            set_error(e);
-            0
+
+        /// A two-body orbit: periapsis altitude (km), eccentricity, angles (°).
+        #[wasm_bindgen(js_name = setOrbit)]
+        pub fn set_orbit(
+            &mut self,
+            alt_km: f64,
+            e: f64,
+            i: f64,
+            raan: f64,
+            argp: f64,
+            m0: f64,
+        ) -> Result<(), JsError> {
+            self.model
+                .set_orbit(alt_km, e, i, raan, argp, m0)
+                .map_err(js)
+        }
+
+        /// A TLE (two lines, or three with a name), propagated with SGP4.
+        #[wasm_bindgen(js_name = setTle)]
+        pub fn set_tle(&mut self, text: &str) -> Result<(), JsError> {
+            self.model.set_tle(text).map_err(js)
+        }
+
+        #[wasm_bindgen(js_name = epochFields)]
+        pub fn epoch_fields(&self) -> Result<Vec<f64>, JsError> {
+            self.model.epoch_fields().map_err(js)
+        }
+
+        pub fn info(&self) -> Vec<f64> {
+            self.model.info()
+        }
+
+        #[wasm_bindgen(js_name = orbitPath)]
+        pub fn orbit_path(&self, n: usize) -> Result<Vec<f64>, JsError> {
+            self.model.orbit_path(n).map_err(js)
+        }
+
+        pub fn state(&self, t_s: f64) -> Result<Vec<f64>, JsError> {
+            self.model.state(t_s).map_err(js)
+        }
+
+        #[wasm_bindgen(js_name = groundTrack)]
+        pub fn ground_track(&self, t0_s: f64, t1_s: f64, n: usize) -> Result<Vec<f64>, JsError> {
+            self.model.ground_track(t0_s, t1_s, n).map_err(js)
+        }
+
+        #[wasm_bindgen(js_name = earthFrame)]
+        pub fn earth_frame(&self, t_s: f64) -> Result<Vec<f64>, JsError> {
+            self.model.earth_frame(t_s).map_err(js)
+        }
+
+        pub fn terminator(&self, t_s: f64, n: usize) -> Result<Vec<f64>, JsError> {
+            self.model.terminator(t_s, n).map_err(js)
+        }
+
+        pub fn passes(&self, t0_s: f64, t1_s: f64) -> Result<Vec<f64>, JsError> {
+            self.model.passes(t0_s, t1_s).map_err(js)
+        }
+
+        #[wasm_bindgen(js_name = siteView)]
+        pub fn site_view(&self, t_s: f64) -> Result<Vec<f64>, JsError> {
+            self.model.site_view(t_s).map_err(js)
+        }
+
+        #[wasm_bindgen(js_name = dawnDusk)]
+        pub fn dawn_dusk(&self, alt_km: f64) -> Result<Vec<f64>, JsError> {
+            self.model.dawn_dusk(alt_km).map_err(js)
+        }
+
+        pub fn constellation(
+            &self,
+            total: usize,
+            planes: usize,
+            phasing: usize,
+            t_s: f64,
+        ) -> Result<Vec<f64>, JsError> {
+            self.model
+                .constellation(total, planes, phasing, t_s)
+                .map_err(js)
+        }
+
+        /// `[lat °, lon °]` of each demo site.
+        pub fn sites() -> Vec<f64> {
+            SITES.iter().flat_map(|(_, la, lo)| [*la, *lo]).collect()
+        }
+
+        /// The demo sites' names.
+        #[wasm_bindgen(js_name = siteNames)]
+        pub fn site_names() -> Vec<String> {
+            SITES.iter().map(|s| s.0.to_string()).collect()
         }
     }
-}
-
-fn set_error(e: Error) {
-    let msg = e.to_string();
-    ERROR.with(|s| *s.borrow_mut() = msg);
-}
-
-fn status(r: Result<(), Error>) -> i32 {
-    match r {
-        Ok(()) => 0,
-        Err(e) => {
-            set_error(e);
-            1
-        }
-    }
-}
-
-/// Address of the last array result (f64s).
-#[no_mangle]
-pub extern "C" fn out_ptr() -> *const f64 {
-    OUT.with(|o| o.borrow().as_ptr())
-}
-
-/// Writes the last error message into the output buffer as UTF-8 bytes
-/// stored one per f64, and returns its length.
-#[no_mangle]
-pub extern "C" fn last_error() -> usize {
-    let bytes: Vec<f64> = ERROR.with(|s| s.borrow().bytes().map(f64::from).collect());
-    publish(Ok(bytes))
-}
-
-#[no_mangle]
-pub extern "C" fn set_epoch(y: i32, mo: u32, d: u32, h: u32, mi: u32, s: f64) -> i32 {
-    status(with_model(|m| m.set_epoch(y, mo, d, h, mi, s)))
-}
-
-#[no_mangle]
-pub extern "C" fn set_orbit(alt_km: f64, e: f64, i: f64, raan: f64, argp: f64, m0: f64) -> i32 {
-    status(with_model(|m| m.set_orbit(alt_km, e, i, raan, argp, m0)))
-}
-
-thread_local! {
-    static INPUT: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
-}
-
-/// A buffer of `len` bytes for JS to write text into (for [`set_tle`]).
-#[no_mangle]
-pub extern "C" fn input_ptr(len: usize) -> *mut u8 {
-    INPUT.with(|b| {
-        let mut b = b.borrow_mut();
-        b.clear();
-        b.resize(len, 0);
-        b.as_mut_ptr()
-    })
-}
-
-/// Loads the TLE that JS wrote into the input buffer.
-#[no_mangle]
-pub extern "C" fn set_tle(len: usize) -> i32 {
-    let text = INPUT
-        .with(|b| String::from_utf8_lossy(&b.borrow()[..len.min(b.borrow().len())]).into_owned());
-    status(with_model(|m| m.set_tle(&text)))
-}
-
-/// `[lat °, lon °]` of each demo site.
-#[no_mangle]
-pub extern "C" fn sites() -> usize {
-    publish(Ok(SITES
-        .iter()
-        .flat_map(|(_, la, lo)| [*la, *lo])
-        .collect()))
-}
-
-/// The demo sites' names, newline-separated, one UTF-8 byte per f64.
-#[no_mangle]
-pub extern "C" fn site_names() -> usize {
-    let names = SITES.iter().map(|s| s.0).collect::<Vec<_>>().join("\n");
-    publish(Ok(names.bytes().map(f64::from).collect()))
-}
-
-#[no_mangle]
-pub extern "C" fn site_view(t_s: f64) -> usize {
-    publish(with_model(|m| m.site_view(t_s)))
-}
-
-#[no_mangle]
-pub extern "C" fn dawn_dusk(alt_km: f64) -> usize {
-    publish(with_model(|m| m.dawn_dusk(alt_km)))
-}
-
-#[no_mangle]
-pub extern "C" fn constellation(total: usize, planes: usize, phasing: usize, t_s: f64) -> usize {
-    publish(with_model(|m| m.constellation(total, planes, phasing, t_s)))
-}
-
-#[no_mangle]
-pub extern "C" fn epoch_fields() -> usize {
-    publish(with_model(|m| m.epoch_fields()))
-}
-
-#[no_mangle]
-pub extern "C" fn terminator(t_s: f64, n: usize) -> usize {
-    publish(with_model(|m| m.terminator(t_s, n)))
-}
-
-#[no_mangle]
-pub extern "C" fn passes(t0_s: f64, t1_s: f64) -> usize {
-    publish(with_model(|m| m.passes(t0_s, t1_s)))
-}
-
-#[no_mangle]
-pub extern "C" fn info() -> usize {
-    publish(with_model(|m| Ok(m.info())))
-}
-
-#[no_mangle]
-pub extern "C" fn orbit_path(n: usize) -> usize {
-    publish(with_model(|m| m.orbit_path(n)))
-}
-
-#[no_mangle]
-pub extern "C" fn state(t_s: f64) -> usize {
-    publish(with_model(|m| m.state(t_s)))
-}
-
-#[no_mangle]
-pub extern "C" fn ground_track(t0_s: f64, t1_s: f64, n: usize) -> usize {
-    publish(with_model(|m| m.ground_track(t0_s, t1_s, n)))
-}
-
-#[no_mangle]
-pub extern "C" fn earth_frame(t_s: f64) -> usize {
-    publish(with_model(|m| m.earth_frame(t_s)))
 }
 
 #[cfg(test)]
@@ -826,7 +791,7 @@ mod tests {
         // July: the ISS is in its high-sun season, in shadow ~15 % of each orbit.
         assert!((20..60).contains(&dark), "{dark} of 200 samples in shadow");
         // Back to the sliders.
-        assert_eq!(set_orbit(400.0, 0.0, 10.0, 0.0, 0.0, 0.0), 0);
+        m.set_orbit(400.0, 0.0, 10.0, 0.0, 0.0, 0.0).unwrap();
         assert!(m.set_tle("not a tle").is_err());
     }
 
@@ -908,13 +873,15 @@ mod tests {
 
     #[test]
     fn invalid_inputs_report_errors() {
-        assert_eq!(set_orbit(400.0, 1.2, 10.0, 0.0, 0.0, 0.0), 1);
-        let n = last_error();
-        let msg: String = OUT.with(|o| o.borrow()[..n].iter().map(|b| *b as u8 as char).collect());
+        let mut m = Model::new().unwrap();
+        let msg = m
+            .set_orbit(400.0, 1.2, 10.0, 0.0, 0.0, 0.0)
+            .unwrap_err()
+            .to_string();
         assert!(msg.contains("closed orbits"), "{msg}");
-        assert_eq!(set_epoch(2026, 2, 30, 0, 0, 0.0), 1);
-        assert_eq!(set_epoch(2026, 11, 19, 17, 0, 0.0), 0);
-        assert_eq!(set_orbit(400.0, 0.1, 10.0, 0.0, 0.0, 0.0), 0);
-        assert!(orbit_path(100) == 400);
+        assert!(m.set_epoch(2026, 2, 30, 0, 0, 0.0).is_err());
+        m.set_epoch(2026, 11, 19, 17, 0, 0.0).unwrap();
+        m.set_orbit(400.0, 0.1, 10.0, 0.0, 0.0, 0.0).unwrap();
+        assert_eq!(m.orbit_path(100).unwrap().len(), 400);
     }
 }

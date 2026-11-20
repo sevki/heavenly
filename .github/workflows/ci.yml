@@ -184,11 +184,20 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
-          tool: mdbook
-      - name: Build the playground's WebAssembly module
+          tool: mdbook,wasm-pack
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the playground (wasm-pack, then Vite)
         run: book/build-playground.sh
-      - name: The module must not need JavaScript imports
-        run: node -e "const m=new WebAssembly.Module(require('fs').readFileSync('book/src/playground/heavenly_viz.wasm'));if(WebAssembly.Module.imports(m).length)throw new Error(JSON.stringify(WebAssembly.Module.imports(m)))"
+      - name: Typecheck @heavenly/react and the playground
+        run: npm run typecheck
+        working-directory: web
+      - name: The wasm-bindgen module loads and computes in Node
+        run: npm test -w @heavenly/react
+        working-directory: web
       - run: mdbook build book
       - name: Every diagram directive was expanded
         # A skipped preprocessor leaves the directive alone on its line; the

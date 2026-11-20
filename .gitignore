@@ -1,3 +1,8 @@
 /target
 /book/book
-/book/src/playground/heavenly_viz.wasm
+# Built by book/build-playground.sh.
+/book/src/playground/app.js
+/book/src/playground/*.wasm
+/web/node_modules
+/web/packages/react/dist
+/web/packages/react/wasm
