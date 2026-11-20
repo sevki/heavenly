@@ -15,3 +15,16 @@ heavenly-core = { path = "../heavenly-core" }
 heavenly-geo = { path = "../heavenly-geo" }
 heavenly-orbit = { path = "../heavenly-orbit" }
 heavenly-query = { path = "../heavenly-query" }
+
+# The JavaScript interface; built with `wasm-pack` into web/packages/react.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+
+# Built with `wasm-pack build viz --profile wasm` (the size-optimised profile
+# in the workspace Cargo.toml). wasm-opt is off: it would download binaryen,
+# and the profile already optimises for size.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.custom]
+wasm-opt = false

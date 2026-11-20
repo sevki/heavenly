@@ -1,0 +1,43 @@
+{
+  "name": "@heavenly/react",
+  "version": "0.8.0",
+  "description": "React components and hooks for the heavenly coordinate library, running in WebAssembly and drawn with WebGL2",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sevki/heavenly",
+    "directory": "web/packages/react"
+  },
+  "homepage": "https://sevki.github.io/heavenly/playground.html",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "wasm/heavenly_viz.js",
+    "wasm/heavenly_viz.d.ts",
+    "wasm/heavenly_viz_bg.wasm"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "wasm": "wasm-pack build ../../../viz --target web --profile wasm --out-dir ../web/packages/react/wasm --out-name heavenly_viz --no-pack",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node test/smoke.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.1",
+    "typescript": "5.9.3"
+  }
+}

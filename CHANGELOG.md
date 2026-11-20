@@ -4,6 +4,26 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
+## Unreleased
+
+### Added
+- `@heavenly/react` (`web/packages/react`): React components for the
+  library. `<Globe>`, `<GroundTrack>` and `<PassTable>` draw with
+  hand-written WebGL2. There are hooks (`useHeavenly`, `useClock`,
+  `useLand`) and a typed wrapper over the WebAssembly module (`loadHeavenly`,
+  `Heavenly`, `Snapshot`).
+
+### Changed
+- The playground is now a React app (`web/playground`, built with Vite) on
+  `@heavenly/react`. The book page only mounts it.
+- `heavenly-viz` exposes its model to JavaScript through wasm-bindgen as a
+  `Playground` class, built with `wasm-pack`. The hand-rolled `extern "C"`
+  interface (output buffer, error codes, input buffer) is gone. Errors now
+  arrive as JavaScript exceptions.
+- CI and the Pages build install wasm-pack and Node. They typecheck the
+  TypeScript and load the bindings in Node as a smoke test.
+- The playground figures are unchanged: the same Rust model computes them.
+
 ## 0.8.0: M8, catalogues and constellations
 
 Upgrading from 0.7 needs no code changes: everything here is new API.

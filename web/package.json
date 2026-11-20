@@ -1,0 +1,17 @@
+{
+  "name": "heavenly-web",
+  "private": true,
+  "description": "The heavenly React library (@heavenly/react) and the book's playground app",
+  "workspaces": [
+    "packages/react",
+    "playground"
+  ],
+  "scripts": {
+    "build": "npm run build -w @heavenly/react && npm run build -w heavenly-playground",
+    "typecheck": "npm run typecheck -w @heavenly/react && npm run build -w @heavenly/react && npm run typecheck -w heavenly-playground",
+    "dev": "npm run dev -w heavenly-playground"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

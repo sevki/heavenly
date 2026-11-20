@@ -1,8 +1,10 @@
 # Playground
 
 An interactive orbit explorer. Everything on this page is computed in your
-browser by the heavenly crates, compiled to WebAssembly (a 167 KB module
-with no JavaScript bindings). Only the drawing is JavaScript.
+browser by the heavenly crates, compiled to WebAssembly with `wasm-pack`
+(a 174 KB module). The page is a React app built on `@heavenly/react`, the
+library's React components (`<Globe>`, `<GroundTrack>`, `<PassTable>`), which
+draw with WebGL2. Only the drawing is JavaScript.
 
 * **Orbit**: `heavenly::orbit` propagates the slider elements
   (`TwoBodyLocator`) or a pasted TLE (`Sgp4`, in TEME).
@@ -23,44 +25,8 @@ with no JavaScript bindings). Only the drawing is JavaScript.
   coordinates. A square turns orange while the satellite is more than 10°
   above its horizon.
 
-<div id="hv-play" class="hv-play">
-<div class="hv-presets">
-<button id="hv-preset-iss">ISS</button>
-<button id="hv-preset-sso">Sun-synchronous</button>
-<button id="hv-preset-molniya">Molniya</button>
-<button id="hv-preset-gps">GPS</button>
-<button id="hv-preset-geo">Geostationary</button>
-<button id="hv-preset-tle">ISS (TLE, SGP4)</button>
-<button id="hv-preset-walker">Constellation</button>
-<button id="hv-preset-odc">Orbital data centre</button>
-</div>
-<details class="hv-tle"><summary>Paste a TLE</summary>
-<textarea id="hv-tle" rows="3" spellcheck="false" aria-label="Two-line element set"></textarea>
-<button id="hv-tle-btn">Propagate with SGP4</button>
-<span class="hv-note">from <a href="https://celestrak.org/NORAD/elements/">CelesTrak</a>, for example. The epoch moves to the TLE's.</span>
-</details>
-<div class="hv-controls">
-<label>Periapsis altitude <input id="hv-alt" type="range" min="0" max="1000" step="1"> <span id="hv-alt-v"></span></label>
-<label>Eccentricity e <input id="hv-e" type="range" min="0" max="0.9" step="0.001"> <span id="hv-e-v"></span></label>
-<label>Inclination i <input id="hv-i" type="range" min="0" max="180" step="0.1"> <span id="hv-i-v"></span></label>
-<label>Ascending node Ω <input id="hv-raan" type="range" min="0" max="360" step="1"> <span id="hv-raan-v"></span></label>
-<label>Arg. of periapsis ω <input id="hv-argp" type="range" min="0" max="360" step="1"> <span id="hv-argp-v"></span></label>
-<label>Epoch (UTC) <input id="hv-epoch" type="datetime-local" value="2026-11-19T17:00" step="60"></label>
-</div>
-<div class="hv-canvases">
-<canvas id="hv-orbit" class="hv-canvas-orbit" aria-label="3D view of the orbit around the Earth"></canvas>
-<canvas id="hv-track" class="hv-canvas-track" aria-label="Ground track on a map of the Earth"></canvas>
-</div>
-<div class="hv-timebar">
-<button id="hv-play-btn">Pause</button>
-<input id="hv-time" type="range" min="0" max="10800" step="1" value="0" aria-label="Time after the epoch">
-<label>speed <select id="hv-speed"><option value="60">×60</option><option value="300" selected>×300</option><option value="1200">×1200</option><option value="3600">×3600</option></select></label>
-</div>
-<div id="hv-readout" class="hv-readout"></div>
-<div id="hv-passes" class="hv-passes"></div>
-<div id="hv-status" class="hv-status">Loading the WebAssembly module…</div>
-</div>
-<script src="playground/playground.js"></script>
+<div id="hv-play" data-land="playground/land-110m.json"><noscript>The playground needs JavaScript and WebGL2.</noscript></div>
+<script type="module" src="playground/app.js"></script>
 
 ## Things to try
 
@@ -115,12 +81,42 @@ for the models and their measured accuracy.
 
 ## Building it
 
-The module is built in CI. To build it locally and view the page:
+The playground is built in CI. To build it locally and view the page, with
+`wasm-pack` and Node 20.19 or later installed:
 
 ```sh
-book/build-playground.sh   # cargo build -p heavenly-viz → book/src/playground/
+book/build-playground.sh   # wasm-pack → @heavenly/react, then Vite → book/src/playground/
 mdbook serve book          # WebAssembly must be served over HTTP, not file://
 ```
+
+The JavaScript lives in `web/`. `web/packages/react` is the library,
+`@heavenly/react`. It contains the wasm-bindgen module, a typed wrapper
+(`loadHeavenly`, `Heavenly`), the hooks (`useHeavenly`, `useClock`,
+`useLand`) and the components. `web/playground` is this page's app. Run
+`npm run dev` in `web/` to work on it with hot reload.
+
+Using the components in your own app looks like this:
+
+```js
+import { Globe, GroundTrack, useClock, useHeavenly } from "@heavenly/react";
+
+function Orbit() {
+  const { heavenly } = useHeavenly();
+  const clock = useClock(300, 3 * 3600); // ×300, wrapping after three hours
+  if (!heavenly) return null;
+  heavenly.setElements({ periapsisAltitudeKm: 420, eccentricity: 0.0005, inclinationDeg: 51.6, raanDeg: 0, argPeriapsisDeg: 0 });
+  const now = heavenly.snapshot(clock.t);
+  return (
+    <>
+      <Globe snapshot={now} path={heavenly.orbitPath()} />
+      <GroundTrack snapshot={now} track={heavenly.groundTrack(0, 3 * 3600)} sites={heavenly.sites} />
+    </>
+  );
+}
+```
+
+That example recomputes the path and the track on every frame. The
+playground computes them once per orbit change, with `useMemo`.
 
 Coastlines: Natural Earth 1:110m land (public domain), via the
 `world-atlas` package (ISC).

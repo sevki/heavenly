@@ -24,8 +24,13 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: taiki-e/install-action@v2
         with:
-          tool: mdbook
-      - name: Build the playground's WebAssembly module
+          tool: mdbook,wasm-pack
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the playground (wasm-pack, then Vite)
         run: book/build-playground.sh
       - name: Build book
         run: mdbook build book
