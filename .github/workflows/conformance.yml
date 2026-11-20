@@ -36,6 +36,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       HEAVENLY_KERNELS: ${{ github.workspace }}/kernels
+      # Generated fixtures. Explicit paths: a wildcard pathspec such as
+      # '*/tests/reference' must match a whole file path, so it matches nothing.
+      FIXTURES: heavenly-geo/tests/reference heavenly-spice/tests heavenly-orbit/tests/reference heavenly-query/tests/reference
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -71,18 +74,18 @@ jobs:
       # itself is tested against the committed values on every architecture.
       - name: The committed fixtures match the reference libraries
         if: matrix.arch == 'x64'
-        run: git diff --exit-code -- '*/tests/reference' heavenly-spice/tests/data
+        run: git diff --exit-code -- $FIXTURES
       - name: How the reference libraries differ on this architecture
         if: matrix.arch != 'x64'
         run: |
           {
             echo "### Reference libraries on linux ${{ matrix.arch }} vs the committed (x64) fixtures"
             echo '```'
-            git diff --stat -- '*/tests/reference' heavenly-spice/tests/data || true
+            git diff --stat -- $FIXTURES
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          git diff --stat -- '*/tests/reference' heavenly-spice/tests/data || true
-          git checkout -- '*/tests/reference' heavenly-spice/tests/data
+          git diff --stat -- $FIXTURES
+          git checkout -- $FIXTURES
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Conformance tests
