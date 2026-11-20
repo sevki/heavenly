@@ -18,6 +18,10 @@ with no JavaScript bindings). Only the drawing is JavaScript.
 * **Passes**: `find_windows` lists the passes over London. A pass is
   visible where the satellite is sunlit while the Sun is more than 6° below
   London's horizon.
+* **Data centres**: the squares are Apple's own data centres (Maiden,
+  Prineville, Reno, Mesa, Waukee, Viborg) at city-level, approximate
+  coordinates. A square turns orange while the satellite is more than 10°
+  above its horizon.
 
 <div id="hv-play" class="hv-play">
 <div class="hv-presets">
@@ -27,6 +31,7 @@ with no JavaScript bindings). Only the drawing is JavaScript.
 <button id="hv-preset-gps">GPS</button>
 <button id="hv-preset-geo">Geostationary</button>
 <button id="hv-preset-tle">ISS (TLE, SGP4)</button>
+<button id="hv-preset-odc">Orbital data centre</button>
 </div>
 <details class="hv-tle"><summary>Paste a TLE</summary>
 <textarea id="hv-tle" rows="3" spellcheck="false" aria-label="Two-line element set"></textarea>
@@ -69,6 +74,17 @@ with no JavaScript bindings). Only the drawing is JavaScript.
   oblateness does not rotate the apogee. That effect is not modelled here.
 * **Epoch**: change the date and the same orbit crosses different longitudes,
   because the Earth Rotation Angle is different.
+* **Orbital data centre**: an illustrative solar-powered data-centre
+  satellite in a dawn–dusk sun-synchronous orbit at 550 km. Published
+  reports of such satellites give only a range of orbits, "500 to 2,000
+  kilometers" and "30 degrees to Sun-Synchronous Orbit", so this is one
+  choice from that range, not a real satellite's orbit. The library works
+  out the inclination (`design::sun_synchronous_inclination_rad`) and the
+  node that faces the Sun at your epoch. The orbit rides the day–night
+  line and stays in sunlight, so the track has no grey stretches. Compare
+  the ISS preset, which is in shadow for about a third of each orbit.
+  `cargo run -p heavenly --example orbital_datacenter` gives the numbers:
+  contacts with each data centre, the gaps between them, and the light time.
 * **ISS (TLE, SGP4)**: an ISS element set from July 2020, propagated with
   SGP4. In midsummer at London's latitude the ISS stays in sunlight all
   night, so every night pass is visible. Its eclipses (dashed on the map)
