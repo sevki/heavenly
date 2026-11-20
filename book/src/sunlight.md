@@ -58,6 +58,50 @@ shadow during the night, which is why it can be seen all night.
 The [playground](playground.md) shows the same thing live: the shadowed
 parts of the ground track, the night side, and the pass list.
 
+## An orbital data centre
+
+A solar-powered data centre in orbit wants as little shadow as possible. A
+**dawn–dusk sun-synchronous orbit** gives that. The Earth's oblateness turns
+its plane once a year, so the plane keeps facing the Sun and the satellite
+rides the day–night line. `design::sun_synchronous_inclination_rad` gives the
+inclination, and `AnalyticSun` gives the node that faces the Sun:
+
+```rust,ignore
+{{#include ../../heavenly/examples/orbital_datacenter.rs:orbit}}
+```
+
+`cargo run -p heavenly --example orbital_datacenter` registers Apple's own
+data centres in a `MemoryRegistry`, at city-level, approximate coordinates,
+next to two orbits at 550 km. One is the dawn–dusk orbit; the other is a
+53° orbit for comparison. It then compares their sunlight and lists each
+data centre's contacts on 20 November 2026:
+
+```text
+Sunlight over 24 hours from 2026-11-20T00:00:00Z:
+  sat:orbital-dc    0 eclipses, in the Earth's shadow  0.0 % of the day
+  sat:53-degree    15 eclipses, in the Earth's shadow 36.5 % of the day
+
+Contacts with the orbital data centre above 10°, over 24 hours:
+  data centre                passes    in view  longest gap   best one-way
+  Maiden, North Carolina          2       15 m       11.7 h        2.23 ms
+  Prineville, Oregon              4       26 m       11.5 h        2.72 ms
+  Reno, Nevada                    4       25 m       11.5 h        2.73 ms
+  Mesa, Arizona                   3       20 m       11.6 h        1.93 ms
+  Waukee, Iowa                    4       26 m       11.5 h        3.26 ms
+  Viborg, Denmark                 5       32 m        7.6 h        1.92 ms
+```
+
+The orbit is illustrative. Published reports of such satellites give only a
+range of orbits, "500 to 2,000 kilometers" and "30 degrees to
+Sun-Synchronous Orbit"; this is one choice from that range, not a real
+satellite's orbit.
+
+The contacts cluster around local dawn and dusk, because that is when a
+dawn–dusk orbit passes over any site. That leaves gaps of about half a day,
+which is why a constellation, not one satellite, would carry the traffic.
+The [playground](playground.md)'s *Orbital data centre* preset shows the
+same orbit live.
+
 ## Checked against SPICE
 
 `heavenly-query/tests/reference/generate_shadow.py` has SPICE find the same

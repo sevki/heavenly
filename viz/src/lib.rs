@@ -58,6 +58,18 @@ pub const EARTH_RADIUS_M: f64 = 6_378_137.0;
 /// The London ground station shown in the playground.
 pub const LONDON: (f64, f64, f64) = (51.5072, -0.1276, 35.0);
 
+/// Demo ground sites drawn on the map: Apple's own data centres, at
+/// city-level (approximate) coordinates, as in the `orbital_datacenter`
+/// example. `(name, latitude °, longitude °)`.
+pub const SITES: [(&str, f64, f64); 6] = [
+    ("Maiden", 35.5757, -81.2115),
+    ("Prineville", 44.2999, -120.8345),
+    ("Reno", 39.5296, -119.8138),
+    ("Mesa", 33.4152, -111.8315),
+    ("Waukee", 41.6117, -93.8852),
+    ("Viborg", 56.4532, 9.4020),
+];
+
 /// Playground state: an epoch, an Earth orbit, and the frames to resolve it in.
 #[derive(Debug)]
 pub struct Model {
@@ -66,6 +78,7 @@ pub struct Model {
     sat: Satellite,
     graph: FrameGraph,
     station: FrameId,
+    sites: Vec<FrameId>,
 }
 
 impl Model {
@@ -80,6 +93,13 @@ impl Model {
             FrameId::ITRF,
             site.enu_to_body_fixed(&Ellipsoid::WGS84),
         )?;
+        let mut sites = Vec::new();
+        for (k, (_, lat, lon)) in SITES.iter().enumerate() {
+            let f = FrameId::custom(Namespace(1), 100 + k as i64).expect("custom namespace");
+            let g = Geodetic::from_degrees(*lat, *lon, 0.0)?;
+            graph.add_fixed(f, FrameId::ITRF, g.enu_to_body_fixed(&Ellipsoid::WGS84))?;
+            sites.push(f);
+        }
         let mut m = Model {
             epoch,
             orbit: TwoBodyLocator {
@@ -110,6 +130,7 @@ impl Model {
             }),
             graph,
             station,
+            sites,
         };
         m.set_orbit(420.0, 0.0005, 51.64, 0.0, 0.0, 0.0)?;
         Ok(m)
@@ -164,6 +185,31 @@ impl Model {
         self.epoch = sgp4.epoch();
         self.sat = Satellite::Tle(Box::new(sgp4), tle);
         Ok(())
+    }
+
+    /// Elevation (°) of the satellite from each of [`SITES`] at `t_s`.
+    pub fn site_view(&self, t_s: f64) -> Result<Vec<f64>, Error> {
+        let epoch = self.at(t_s)?;
+        self.sites
+            .iter()
+            .map(|f| {
+                look_angles::<_, _, Error>(*f, &self.sat, epoch, &self.graph)
+                    .map(|a| a.elevation_rad.to_degrees())
+            })
+            .collect()
+    }
+
+    /// A dawn–dusk sun-synchronous orbit at `alt_km` for the model epoch:
+    /// `[inclination °, ascending node °]`. The node is 90° east of the
+    /// Sun's right ascension, so the orbit plane faces the Sun.
+    pub fn dawn_dusk(&self, alt_km: f64) -> Result<Vec<f64>, Error> {
+        let a = EARTH_RADIUS_M + alt_km * 1e3;
+        let i = heavenly_orbit::design::sun_synchronous_inclination_rad(a, 0.0).ok_or(
+            Error::InvalidInput("no sun-synchronous orbit at this altitude"),
+        )?;
+        let sun = AnalyticSun::position_m(self.epoch);
+        let node = (sun.y.atan2(sun.x).to_degrees() + 90.0).rem_euclid(360.0);
+        Ok(vec![i.to_degrees(), node])
     }
 
     /// The model epoch as UTC `[year, month, day, hour, minute, second]`.
@@ -576,6 +622,32 @@ pub extern "C" fn set_tle(len: usize) -> i32 {
     status(with_model(|m| m.set_tle(&text)))
 }
 
+/// `[lat °, lon °]` of each demo site.
+#[no_mangle]
+pub extern "C" fn sites() -> usize {
+    publish(Ok(SITES
+        .iter()
+        .flat_map(|(_, la, lo)| [*la, *lo])
+        .collect()))
+}
+
+/// The demo sites' names, newline-separated, one UTF-8 byte per f64.
+#[no_mangle]
+pub extern "C" fn site_names() -> usize {
+    let names = SITES.iter().map(|s| s.0).collect::<Vec<_>>().join("\n");
+    publish(Ok(names.bytes().map(f64::from).collect()))
+}
+
+#[no_mangle]
+pub extern "C" fn site_view(t_s: f64) -> usize {
+    publish(with_model(|m| m.site_view(t_s)))
+}
+
+#[no_mangle]
+pub extern "C" fn dawn_dusk(alt_km: f64) -> usize {
+    publish(with_model(|m| m.dawn_dusk(alt_km)))
+}
+
 #[no_mangle]
 pub extern "C" fn epoch_fields() -> usize {
     publish(with_model(|m| m.epoch_fields()))
@@ -715,6 +787,25 @@ mod tests {
         // Points run west to east, one per longitude.
         let lons: Vec<f64> = t[2..].chunks(2).map(|p| p[1]).collect();
         assert!(lons.windows(2).all(|w| w[1] > w[0]) && lons[0] == -180.0 && lons[89] == 180.0);
+    }
+
+    #[test]
+    fn dawn_dusk_orbit_stays_in_sunlight() {
+        let mut m = Model::new().unwrap();
+        let dd = m.dawn_dusk(550.0).unwrap();
+        assert!((dd[0] - 97.59).abs() < 0.02, "{dd:?}");
+        m.set_orbit(550.0, 0.0, dd[0], dd[1], 0.0, 0.0).unwrap();
+        // As in the orbital_datacenter example: no shadow all day.
+        let track = m.ground_track(0.0, 86_400.0, 600).unwrap();
+        assert!(track.chunks(4).all(|c| c[3] > 0.99));
+        // Some site sees it at some point, and elevations are sane.
+        let seen = (0..288).any(|k| {
+            m.site_view(k as f64 * 300.0)
+                .unwrap()
+                .iter()
+                .any(|e| *e > 10.0)
+        });
+        assert!(seen);
     }
 
     #[test]

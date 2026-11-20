@@ -61,6 +61,7 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+pub mod design;
 mod elements;
 pub mod gm;
 pub mod kepler;

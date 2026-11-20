@@ -18,6 +18,15 @@ within a milestone. Before 1.0, a minor bump may break the API.
   Eclipse edges match SPICE `gfoclt` (pck00011 ellipsoids, DE440) to
   3–39 ms for LEO, GEO and HEO orbits. The new conformance generator is
   `generate_shadow.py`.
+- `heavenly::orbit::design::sun_synchronous_inclination_rad`. It agrees
+  with published values for 550, 705 and 800 km to within 0.02°.
+- Example `orbital_datacenter`: Apple's own data centres (city-level
+  coordinates) and an illustrative dawn–dusk sun-synchronous data-centre
+  satellite, registered together. It compares sunlight with a 53° orbit
+  (0 % vs 36.5 % in shadow) and lists contacts, gaps and light time.
+- Playground: an *Orbital data centre* preset, whose orbit the library
+  computes for the chosen epoch. The data centres are marked on the map,
+  light up while in view, and are listed in the readout.
 - Example `visible_passes`: ISS passes over London that are actually
   visible (sunlit satellite, dark sky). It is cross-checked with Skyfield.
 - Playground:

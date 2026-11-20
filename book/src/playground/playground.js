@@ -18,6 +18,7 @@
   let track = [];
   let info = [];
   let passes = [];
+  let sites = []; // [{name, lat, lon}], from the library
   let epochMs = 0; // the model epoch, as JS milliseconds (UTC)
   const ISS_TLE =
     "1 25544U 98067A   20194.88612269 -.00002218  00000-0 -31515-4 0  9992\n" +
@@ -48,6 +49,8 @@
       const { instance } = await WebAssembly.instantiate(bytes, {});
       wasm = instance.exports;
       land = landData;
+      const names = String.fromCharCode(...read(wasm.site_names())).split("\n");
+      sites = chunk(read(wasm.sites()), 2).map(([lat, lon], k) => ({ name: names[k], lat, lon }));
       $("hv-status").textContent = "";
       root.classList.add("hv-ready");
       applyOrbit();
@@ -160,6 +163,21 @@
   for (const id of ["hv-alt", "hv-e", "hv-i", "hv-raan", "hv-argp", "hv-epoch"]) {
     $(id).addEventListener("input", applyOrbit);
   }
+  // Dawn–dusk sun-synchronous orbit at 550 km for the chosen epoch: the
+  // library gives the inclination and the node that faces the Sun.
+  $("hv-preset-odc").addEventListener("click", () => {
+    if (!wasm) return;
+    root.classList.remove("hv-tle-mode");
+    applyOrbit(); // sets the epoch from the input
+    try {
+      const [i, raan] = call("dawn_dusk", 550);
+      setControls({ alt: 550, e: 0, i, raan, argp: 0 });
+      t = 0;
+      applyOrbit();
+    } catch (err) {
+      $("hv-status").textContent = err.message;
+    }
+  });
   $("hv-tle").value = ISS_TLE;
   $("hv-preset-tle").addEventListener("click", () => { $("hv-tle").value = ISS_TLE; applyTle(ISS_TLE); });
   $("hv-tle-btn").addEventListener("click", () => applyTle($("hv-tle").value));
@@ -386,6 +404,14 @@
       prev = x;
     }
     ctx.stroke(); ctx.setLineDash([]);
+    // Demo data centres: orange when the satellite is above 10° there.
+    ctx.font = "11px sans-serif";
+    sites.forEach((st, k) => {
+      const up = now.siteEl[k] > 10;
+      ctx.fillStyle = up ? c.hot : c.fg;
+      ctx.fillRect(X(st.lon) - 3, Y(st.lat) - 3, 6, 6);
+      ctx.fillText(st.name, X(st.lon) + 5, Y(st.lat) + 12);
+    });
     // London and the sub-satellite point.
     ctx.fillStyle = c.fg; ctx.beginPath(); ctx.arc(X(-0.1276), Y(51.5072), 3.5, 0, 2 * Math.PI); ctx.fill();
     ctx.font = "12px sans-serif"; ctx.fillText("London", X(-0.1276) + 6, Y(51.5072) - 5);
@@ -415,6 +441,7 @@
         lit: s[16], shadow: s[17], sunEl: s[18], sun: s.slice(21, 24),
         earth: call("earth_frame", t),
         term: call("terminator", t, 181),
+        siteEl: call("site_view", t),
       };
       const c = colours();
       drawOrbit(c, now);
@@ -430,7 +457,8 @@
         `range ${now.range.toFixed(0)} km — ${visible ? "<b class=\"hv-up\">above the horizon</b>" : "below the horizon"}<br>` +
         `${utc(t)} UTC &nbsp;·&nbsp; satellite ${["in sunlight", "in the penumbra", "in the Earth's shadow", "in the antumbra"][now.shadow]}` +
         `${now.shadow === 1 ? " (" + (100 * now.lit).toFixed(0) + "% of the Sun)" : ""} &nbsp;·&nbsp; ` +
-        `Sun at London ${now.sunEl.toFixed(1)}° (${now.sunEl > 0 ? "day" : now.sunEl > -6 ? "twilight" : "dark"})`;
+        `Sun at London ${now.sunEl.toFixed(1)}° (${now.sunEl > 0 ? "day" : now.sunEl > -6 ? "twilight" : "dark"})<br>` +
+        `data centres in view (above 10°): ${sites.filter((_, k) => now.siteEl[k] > 10).map((st) => st.name).join(", ") || "none"}`;
     } catch (err) {
       $("hv-status").textContent = err.message;
     }
