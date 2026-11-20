@@ -19,6 +19,7 @@
   let info = [];
   let passes = [];
   let sites = []; // [{name, lat, lon}], from the library
+  let walker = null; // {total, planes, phasing} while showing a constellation
   let epochMs = 0; // the model epoch, as JS milliseconds (UTC)
   const ISS_TLE =
     "1 25544U 98067A   20194.88612269 -.00002218  00000-0 -31515-4 0  9992\n" +
@@ -165,8 +166,17 @@
   }
   // Dawn–dusk sun-synchronous orbit at 550 km for the chosen epoch: the
   // library gives the inclination and the node that faces the Sun.
+  // A Walker 24/4/1 shell built from the slider orbit; the sliders keep
+  // shaping it (altitude, inclination, node).
+  $("hv-preset-walker").addEventListener("click", () => {
+    walker = { total: 24, planes: 4, phasing: 1 };
+    setControls({ alt: 550, e: 0, i: 53, raan: 0, argp: 0 });
+    t = 0;
+    applyOrbit();
+  });
   $("hv-preset-odc").addEventListener("click", () => {
     if (!wasm) return;
+    walker = null;
     root.classList.remove("hv-tle-mode");
     applyOrbit(); // sets the epoch from the input
     try {
@@ -179,11 +189,11 @@
     }
   });
   $("hv-tle").value = ISS_TLE;
-  $("hv-preset-tle").addEventListener("click", () => { $("hv-tle").value = ISS_TLE; applyTle(ISS_TLE); });
-  $("hv-tle-btn").addEventListener("click", () => applyTle($("hv-tle").value));
+  $("hv-preset-tle").addEventListener("click", () => { walker = null; $("hv-tle").value = ISS_TLE; applyTle(ISS_TLE); });
+  $("hv-tle-btn").addEventListener("click", () => { walker = null; applyTle($("hv-tle").value); });
   for (const [name, p] of Object.entries(presets)) {
     const b = $("hv-preset-" + name);
-    if (b) b.addEventListener("click", () => { setControls(p); t = 0; applyOrbit(); });
+    if (b) b.addEventListener("click", () => { walker = null; setControls(p); t = 0; applyOrbit(); });
   }
   $("hv-play-btn").addEventListener("click", () => {
     playing = !playing;
@@ -404,10 +414,25 @@
       prev = x;
     }
     ctx.stroke(); ctx.setLineDash([]);
-    // Demo data centres: orange when the satellite is above 10° there.
+    // A constellation: links, then satellites (grey in the Earth's shadow).
+    if (now.cons) {
+      ctx.strokeStyle = c.hot; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.6;
+      for (const [a, b] of now.cons.links) {
+        const [pa, pb] = [now.cons.sats[a], now.cons.sats[b]];
+        if (Math.abs(pa[1] - pb[1]) > 180) continue; // across the map's edge
+        ctx.beginPath(); ctx.moveTo(X(pa[1]), Y(pa[0])); ctx.lineTo(X(pb[1]), Y(pb[0])); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      for (const [la, lo, lit] of now.cons.sats) {
+        ctx.fillStyle = lit < 0.5 ? c.muted : c.accent;
+        ctx.beginPath(); ctx.arc(X(lo), Y(la), 4, 0, 2 * Math.PI); ctx.fill();
+      }
+    }
+    // Demo data centres: orange when the satellite (or, for a
+    // constellation, any satellite above 25°) is in view.
     ctx.font = "11px sans-serif";
     sites.forEach((st, k) => {
-      const up = now.siteEl[k] > 10;
+      const up = now.cons ? now.cons.siteUp[k] > 0 : now.siteEl[k] > 10;
       ctx.fillStyle = up ? c.hot : c.fg;
       ctx.fillRect(X(st.lon) - 3, Y(st.lat) - 3, 6, 6);
       ctx.fillText(st.name, X(st.lon) + 5, Y(st.lat) + 12);
@@ -442,7 +467,18 @@
         earth: call("earth_frame", t),
         term: call("terminator", t, 181),
         siteEl: call("site_view", t),
+        cons: null,
       };
+      if (walker) {
+        // [n, n × (lat, lon, lit), m, m × (a, b), per-site counts]
+        const r = call("constellation", walker.total, walker.planes, walker.phasing, t);
+        const n = r[0], m = r[1 + 3 * n];
+        now.cons = {
+          sats: chunk(r.slice(1, 1 + 3 * n), 3),
+          links: chunk(r.slice(2 + 3 * n, 2 + 3 * n + 2 * m), 2),
+          siteUp: r.slice(2 + 3 * n + 2 * m),
+        };
+      }
       const c = colours();
       drawOrbit(c, now);
       drawTrack(c, now);
@@ -458,7 +494,11 @@
         `${utc(t)} UTC &nbsp;·&nbsp; satellite ${["in sunlight", "in the penumbra", "in the Earth's shadow", "in the antumbra"][now.shadow]}` +
         `${now.shadow === 1 ? " (" + (100 * now.lit).toFixed(0) + "% of the Sun)" : ""} &nbsp;·&nbsp; ` +
         `Sun at London ${now.sunEl.toFixed(1)}° (${now.sunEl > 0 ? "day" : now.sunEl > -6 ? "twilight" : "dark"})<br>` +
-        `data centres in view (above 10°): ${sites.filter((_, k) => now.siteEl[k] > 10).map((st) => st.name).join(", ") || "none"}`;
+        (now.cons
+          ? `constellation: ${now.cons.sats.length} satellites (Walker ${walker.total}/${walker.planes}/${walker.phasing}), ` +
+            `${now.cons.sats.filter((s) => s[2] >= 0.5).length} in sunlight, ${now.cons.links.length} inter-satellite links &nbsp;·&nbsp; ` +
+            `data centres with a satellite above 25°: ${sites.filter((_, k) => now.cons.siteUp[k] > 0).map((st) => st.name).join(", ") || "none"}`
+          : `data centres in view (above 10°): ${sites.filter((_, k) => now.siteEl[k] > 10).map((st) => st.name).join(", ") || "none"}`);
     } catch (err) {
       $("hv-status").textContent = err.message;
     }

@@ -290,6 +290,27 @@ impl Sgp4 {
         )?)
     }
 
+    /// Initialises SGP4 from an OMM, following the reference
+    /// implementation's own OMM reader (`sgp4.omm.initialize`): the mean
+    /// motion is converted as `n / 720 · π`, and the epoch is counted in
+    /// microseconds, which round slightly differently from a TLE's.
+    #[cfg(feature = "alloc")]
+    pub fn from_omm(omm: &crate::Omm, gravity: Gravity, opsmode: OpsMode) -> Result<Sgp4, Error> {
+        Ok(Sgp4::from_elements(
+            gravity,
+            opsmode,
+            omm.epoch,
+            omm.days_since_1950(),
+            omm.bstar,
+            omm.eccentricity,
+            omm.arg_pericenter_deg * DEG2RAD,
+            omm.inclination_deg * DEG2RAD,
+            omm.mean_anomaly_deg * DEG2RAD,
+            omm.mean_motion_rev_day / 720.0 * PI,
+            omm.raan_deg * DEG2RAD,
+        )?)
+    }
+
     /// The TLE epoch.
     pub fn epoch(&self) -> Epoch {
         self.epoch

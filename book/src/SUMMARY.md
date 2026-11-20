@@ -17,6 +17,7 @@
 - [Identity and local frames](identity.md)
 - [Signals and visibility](signals.md)
 - [Sunlight and eclipses](sunlight.md)
+- [Catalogues and constellations](catalogs.md)
 - [Placement topology](topology.md)
 - [Playground](playground.md)
 - [`no_std` and features](no-std.md)

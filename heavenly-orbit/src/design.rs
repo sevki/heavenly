@@ -1,6 +1,48 @@
 //! Orbit design helpers.
 
-use crate::gm;
+use heavenly_core::Epoch;
+
+use crate::{gm, ConicElements};
+
+/// A Walker delta constellation `i: t/p/f`: `total` satellites in `planes`
+/// equally spaced planes, all circular at `semi_major_axis_m` and
+/// `inclination_rad`. Satellites are equally spaced within each plane, and
+/// each plane is shifted along its orbit by `phasing × 360°/total` from the
+/// one before. `node0_rad` is the first plane's ascending node.
+///
+/// Returns them plane by plane, at `epoch`, about the Earth. Fails if
+/// `total` is not a multiple of `planes`, or `phasing` is not below
+/// `planes`.
+#[allow(clippy::too_many_arguments)]
+pub fn walker_delta(
+    total: usize,
+    planes: usize,
+    phasing: usize,
+    inclination_rad: f64,
+    semi_major_axis_m: f64,
+    node0_rad: f64,
+    epoch: Epoch,
+) -> Option<impl Iterator<Item = ConicElements>> {
+    if planes == 0 || total % planes != 0 || phasing >= planes.max(1) {
+        return None;
+    }
+    let per_plane = total / planes;
+    let tau = core::f64::consts::TAU;
+    Some((0..total).map(move |k| {
+        let (j, s) = (k / per_plane, k % per_plane);
+        ConicElements {
+            periapsis_m: semi_major_axis_m,
+            eccentricity: 0.0,
+            inclination_rad,
+            ascending_node_rad: node0_rad + tau * j as f64 / planes as f64,
+            argument_of_periapsis_rad: 0.0,
+            mean_anomaly_rad: tau * s as f64 / per_plane as f64
+                + tau * (phasing * j) as f64 / total as f64,
+            epoch,
+            gm_m3_s2: gm::EARTH,
+        }
+    }))
+}
 
 /// Earth's J2 (EGM2008, unnormalised) and the equatorial radius it goes with.
 const J2: f64 = 1.082_626_68e-3;
@@ -43,6 +85,21 @@ mod tests {
             assert!((i - deg).abs() < 0.02, "{alt_km} km: {i}");
         }
         assert!(sun_synchronous_inclination_rad(R_EQ + 7_000e3, 0.0).is_none());
+    }
+
+    #[test]
+    fn walker_delta_layout() {
+        let e = Epoch::J2000;
+        let w: Vec<_> = walker_delta(24, 3, 1, 1.0, 7e6, 0.0, e).unwrap().collect();
+        assert_eq!(w.len(), 24);
+        let tau = core::f64::consts::TAU;
+        // Planes 120° apart; 8 per plane, 45° apart; 15° phase per plane.
+        assert!((w[8].ascending_node_rad - tau / 3.0).abs() < 1e-15);
+        assert!((w[1].mean_anomaly_rad - tau / 8.0).abs() < 1e-15);
+        assert!((w[8].mean_anomaly_rad - tau / 24.0).abs() < 1e-15);
+        assert!(walker_delta(24, 5, 1, 1.0, 7e6, 0.0, e).is_none());
+        assert!(walker_delta(24, 3, 3, 1.0, 7e6, 0.0, e).is_none());
+        assert!(walker_delta(24, 0, 0, 1.0, 7e6, 0.0, e).is_none());
         assert!(sun_synchronous_inclination_rad(R_EQ - 1.0, 0.0).is_none());
     }
 }

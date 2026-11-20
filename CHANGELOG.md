@@ -4,6 +4,38 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
+## Unreleased
+
+### Added
+- `heavenly::orbit::Omm`: CCSDS Orbit Mean-Elements Messages carrying SGP4
+  elements, read from KVN, JSON and CSV without serde. Messages that are
+  not SGP4/TEME/EARTH/UTC are rejected. `Sgp4::from_omm` follows the
+  reference implementation's own OMM path and matches it to 2.8e-10 km over
+  the verification set (656 states).
+- `heavenly::orbit::Catalog`: load many TLEs (two- or three-line) or OMMs,
+  with unloadable sets reported as `Rejected`. `states_at`, `positions_at`
+  and `position_of` propagate them; `states_at` moves every object into a
+  frame with one batch transform, bit-identical to one object at a time.
+- `heavenly::query::catalog`:
+  - `contacts`: object-above-mask windows for many sites and objects,
+    resolving each site once and applying it as a batch;
+  - `links`: inter-satellite line of sight past a body, with range and
+    clearance limits;
+  - `conjunctions`: closest approaches under a threshold, with per-pair
+    guards from measured relative speeds.
+
+  Tests check them against independent methods: per-pair `find_windows` +
+  `look_angles`, and brute-force sampling every second (all 324
+  approaches).
+- `heavenly::orbit::design::walker_delta`: Walker `t/p/f` constellations.
+- Example `constellation`: coverage of Apple's data centres, the link
+  network, and close approaches with a crossing shell.
+- Playground: a *Constellation* preset. Every satellite is drawn, grey in
+  shadow, with its inter-satellite links, and the data centres light up
+  when a satellite is above 25°. All of it is computed per frame by the
+  library.
+- Book chapter *Catalogues and constellations*.
+
 ## 0.7.0: M7, Earth orientation data, sunlight and batch operations
 
 ### Migrating from 0.6
