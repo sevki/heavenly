@@ -4,7 +4,9 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
-## Unreleased
+## 0.8.0: M8, catalogues and constellations
+
+Upgrading from 0.7 needs no code changes: everything here is new API.
 
 ### Added
 - `heavenly::orbit::Omm`: CCSDS Orbit Mean-Elements Messages carrying SGP4
