@@ -9,7 +9,7 @@ default features off. Their only external dependency is
 | `std` | yes | `std::error::Error` for `Error`; implies `alloc` |
 | `alloc` | no | `FrameGraph`, and `heavenly-geo`'s `register` helpers |
 
-`heavenly-spice` always needs `alloc` (kernels are held in memory). Its `std`
+`heavenly-spice` and `heavenly-id` always need `alloc` (kernels are held in memory). Its `std`
 feature (default) adds `Spk::open` and `Pck::open`; without it, load bytes
 yourself and use `from_bytes`.
 

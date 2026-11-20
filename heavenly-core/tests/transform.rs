@@ -364,3 +364,23 @@ fn rotation_from_matrix_round_trips() {
     }
     assert!(Rotation::from_matrix([[f64::NAN; 3]; 3]).is_none());
 }
+
+#[test]
+fn location_id_parsing() {
+    let id = LocationId(0x0123_4567_89ab_cdef_0123_4567_89ab_cdef);
+    assert_eq!(LocationId::parse(&id.to_string()), Ok(id));
+    assert_eq!(
+        "01234567-89AB-CDEF-0123-456789abcdef".parse::<LocationId>(),
+        Ok(id)
+    );
+    assert_eq!(LocationId::from_bytes(id.to_bytes()), id);
+    for bad in [
+        "",
+        "0123",
+        "01234567-89ab-cdef-0123456789abcdef-",
+        "0123456789abcdef0123456789abcdeg",
+        "01234567_89ab-cdef-0123-456789abcdef",
+    ] {
+        assert!(LocationId::parse(bad).is_err(), "{bad}");
+    }
+}

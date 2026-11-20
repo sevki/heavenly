@@ -31,7 +31,7 @@ use svg::{Svg, ACCENT, ACCENT2, FG, MUTED};
 
 type Figure = (&'static str, fn() -> String);
 
-const FIGURES: [Figure; 10] = [
+const FIGURES: [Figure; 11] = [
     ("crates", crates),
     ("frame-graph", frame_graph),
     ("transform", transform),
@@ -42,6 +42,7 @@ const FIGURES: [Figure; 10] = [
     ("sampled-trajectory", sampled_trajectory),
     ("daf", daf),
     ("earth-orientation", earth_orientation),
+    ("registry", registry),
 ];
 
 const DIRECTIVE: &str = "{{#heavenly-diagram ";
@@ -1189,6 +1190,97 @@ fn earth_orientation() -> String {
     s.text((20.0, 160.0), "M = W(xp, yp, s′) · R₃(ERA) · Q(X, Y, s)      (IERS 2010 CIO-based procedure, as SOFA c2t06a)", "start", FG, 12.0);
     s.text((20.0, 186.0), "precession in full (IAU 2006), nutation truncated to 20 terms: 7.6 mas from SOFA over 1980–2050", "start", MUTED, 11.0);
     s.finish("Earth orientation chain")
+}
+
+fn registry() -> String {
+    let mut s = Svg::new("registry", 680.0, 470.0);
+    s.text(
+        (110.0, 20.0),
+        "aliases (mutable names)",
+        "middle",
+        MUTED,
+        11.5,
+    );
+    s.text(
+        (310.0, 20.0),
+        "LocationId (identity)",
+        "middle",
+        MUTED,
+        11.5,
+    );
+    s.text(
+        (560.0, 20.0),
+        "entities and their frames",
+        "middle",
+        MUTED,
+        11.5,
+    );
+    let ex = 560.0;
+    let ew = 170.0;
+    let frame = |s: &mut Svg, y: f64, name: &str| node(s, (ex, y), 110.0, name, None, ACCENT);
+    let entity =
+        |s: &mut Svg, y: f64, name: &str, mount: &str| node(s, (ex, y), ew, name, Some(mount), FG);
+    let up = |s: &mut Svg, from_y: f64, to_y: f64, label: &str| {
+        s.arrow((ex, from_y - 21.0), (ex, to_y + 21.0), FG);
+        s.text(
+            (ex - 8.0, (from_y + to_y) / 2.0 + 4.0),
+            label,
+            "end",
+            ACCENT,
+            10.5,
+        );
+    };
+    // Ground tree.
+    frame(&mut s, 50.0, "ITRF");
+    entity(&mut s, 115.0, "London LHR1", "Kind::Facility");
+    entity(&mut s, 180.0, "Hall 2", "Kind::Room");
+    entity(&mut s, 245.0, "Rack 7", "Kind::Rack");
+    s.arrow((ex, 115.0 - 21.0), (ex, 50.0 + 14.0), FG);
+    s.text(
+        (ex - 8.0, 83.0),
+        "Mount::Geodetic (ENU)",
+        "end",
+        ACCENT,
+        10.5,
+    );
+    up(&mut s, 180.0, 115.0, "Mount::Fixed");
+    up(&mut s, 245.0, 180.0, "Mount::Fixed");
+    // Space tree.
+    frame(&mut s, 295.0, "GCRF");
+    entity(&mut s, 360.0, "sat-42", "Kind::Spacecraft");
+    entity(&mut s, 425.0, "Rack 1", "Kind::Rack (in Module 2)");
+    s.arrow((ex, 360.0 - 21.0), (ex, 295.0 + 14.0), FG);
+    s.text(
+        (ex - 8.0, 328.0),
+        "Mount::Trajectory (LVLH)",
+        "end",
+        ACCENT,
+        10.5,
+    );
+    up(&mut s, 425.0, 360.0, "Mount::Fixed ×2");
+    // Aliases → IDs → entities.
+    let rows = [
+        (115.0, "dc:lhr:01", "6f1c0b4e…"),
+        (245.0, "dc:lhr:01/hall-2/rack-07", "9a8b7c6d…"),
+        (360.0, "sat:example:42", "3c2b1a09…"),
+        (425.0, "sat:example:42/module-2/rack-1", "7c6b5a4f…"),
+    ];
+    for (y, alias, id) in rows {
+        s.rect((8.0, y - 13.0), (204.0, 26.0), MUTED, None, true);
+        s.mono((110.0, y + 4.0), alias, "middle", FG, 10.5);
+        s.rect(
+            (250.0, y - 13.0),
+            (120.0, 26.0),
+            ACCENT2,
+            Some(ACCENT2),
+            false,
+        );
+        s.mono((310.0, y + 4.0), id, "middle", FG, 11.0);
+        s.arrow((213.0, y), (248.0, y), MUTED);
+        s.arrow((371.0, y), (ex - ew / 2.0 - 2.0, y), ACCENT2);
+    }
+    s.text((20.0, 462.0), "rename / repoint changes only the left column; register_frames() adds one frame-graph edge per entity", "start", MUTED, 11.0);
+    s.finish("Aliases, identities and entity frames in a Registry")
 }
 
 #[cfg(test)]

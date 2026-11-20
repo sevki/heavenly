@@ -21,7 +21,7 @@ compares two positions unless they share a frame and an epoch.
 
 ## What exists today
 
-Milestones **M1**–**M3** are complete (version 0.3). The `heavenly-core` crate provides:
+Milestones **M1**–**M4** are complete (version 0.4). The `heavenly-core` crate provides:
 
 | Type | Purpose |
 |------|---------|
@@ -40,6 +40,10 @@ ephemerides and lunar orientation from SPICE kernels. See
 
 `heavenly-orbit` adds two-body propagation, orbital elements and sampled
 trajectories. See [Orbits and trajectories](orbits.md).
+
+`heavenly-id` adds stable identities, aliases and a registry of
+facilities, racks and spacecraft with their own frames. See
+[Identity and local frames](identity.md).
 
 To see it running, try the [Playground](playground.md): the library
 compiled to WebAssembly, computing orbits, ground tracks and visibility in
