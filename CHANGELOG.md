@@ -21,6 +21,8 @@ within a milestone. Before 1.0, a minor bump may break the API.
     non-locatable groups and frame-code collisions.
 - `heavenly-core`: `LocationId::parse` and `FromStr` (32 hex digits or a
   hyphenated UUID), plus `to_bytes`, `from_bytes` and `From<u128>`.
+- Project logo in the README, the book (introduction page and favicon) and
+  every crate's rustdoc (`html_logo_url` / `html_favicon_url`).
 - Book: an *Identity and local frames* chapter with a registry diagram, and
   the design proposal's London-rack-to-orbiting-rack example
   (`cargo run -p heavenly-id --example racks`).

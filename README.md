@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="book/src/images/logo.png" alt="heavenly logo: a gridded globe with a moon, a planet and an orbit" width="200">
+</p>
+
 # heavenly
 
 A Rust library for describing, transforming and resolving physical locations

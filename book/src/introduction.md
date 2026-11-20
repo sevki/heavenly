@@ -1,5 +1,9 @@
 # Introduction
 
+<p align="center">
+  <img src="images/logo.png" alt="heavenly logo: a gridded globe with a moon, a planet and an orbit" width="180">
+</p>
+
 `heavenly` is a Rust library for describing, transforming and resolving
 physical locations across celestial bodies and moving reference frames. The
 same API covers a server rack in London, a lunar base, an Earth-orbiting
