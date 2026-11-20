@@ -17,7 +17,7 @@ a lunar base or a spacecraft in transit.
 
 ```toml
 [dependencies]
-heavenly = "0.6"
+heavenly = "0.7"
 ```
 
 ```rust
@@ -98,7 +98,7 @@ conformance suite (in Node, via `wasm-pack`). MSRV is Rust 1.70. See
 ## Versioning
 
 One version for the whole workspace. The minor version increases with each
-roadmap milestone (currently **0.6.0** = M6). See [`CHANGELOG.md`](CHANGELOG.md).
+roadmap milestone (currently **0.7.0** = M7). See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 

@@ -4,7 +4,20 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
-## Unreleased
+## 0.7.0: M7, Earth orientation data, sunlight and batch operations
+
+### Migrating from 0.6
+- **`heavenly::id`.** `Registry::new` is now `MemoryRegistry::new`. To
+  call `frame_of`, `resolve`, `register_frames`, `locate` and the other
+  lookups, bring the trait into scope: `use heavenly::id::Registry;`.
+- **Return types.** `children` now returns owned `Entity`s, and `path`
+  returns `Cow<Entity>`. Use `.into_iter()`, or `.name.clone()`, where
+  you held references before.
+- **SIMD.** The new `simd` feature is on by default, and adds `wide` as a
+  dependency. Results are bit-identical with or without it. To keep `libm`
+  as the only dependency, use `default-features = false`.
+- **Errors.** `Error::Parse` now displays as "parse error: …" instead of
+  "invalid epoch string: …".
 
 ### Added
 - Sunlight and eclipses in `heavenly::query`:
@@ -63,6 +76,18 @@ within a milestone. Before 1.0, a minor bump may break the API.
 
   CI checks parity with AVX2, NEON (arm64 runners) and `simd128`
   (`wasm-pack`), and builds `simd` without std.
+- `heavenly::geo::eop::EopTable`: IERS Earth orientation parameters from
+  `finals2000A` (including predictions, Bulletin B values where available) or
+  EOP 20 C04 files. It interpolates with four-point Lagrange polynomials on
+  UT1 − TAI, so leap seconds are handled exactly, never extrapolates, and
+  implements `EopProvider`, so it plugs into `earth::register`. It is checked
+  against astropy's IERS readers. Works without std (it needs `alloc`).
+- CI: WebAssembly. A `wasm32-unknown-unknown` job builds `heavenly` without
+  std, with alloc and with std, plus every crate's tests and examples. A
+  `wasm-pack` job runs a portable conformance suite (`heavenly/tests/
+  conformance.rs`: SGP4, TEME, Earth orientation, two-body, SPK and light
+  time against their references, with the synthetic kernel compiled in)
+  in Node with wasm-bindgen-test. The same suite runs natively.
 
 ### Changed
 - **`heavenly::id::Registry` is now a trait.** Implement its four lookup
@@ -77,20 +102,6 @@ within a milestone. Before 1.0, a minor bump may break the API.
   - `validate` now also detects frame-code collisions, which matters for
     stores that don't check on insert.
   - `entity_frame(namespace, id)` is public.
-
-### Added
-- `heavenly::geo::eop::EopTable`: IERS Earth orientation parameters from
-  `finals2000A` (including predictions, Bulletin B values where available) or
-  EOP 20 C04 files. It interpolates with four-point Lagrange polynomials on
-  UT1 − TAI, so leap seconds are handled exactly, never extrapolates, and
-  implements `EopProvider`, so it plugs into `earth::register`. It is checked
-  against astropy's IERS readers. Works without std (it needs `alloc`).
-- CI: WebAssembly. A `wasm32-unknown-unknown` job builds `heavenly` without
-  std, with alloc and with std, plus every crate's tests and examples. A
-  `wasm-pack` job runs a portable conformance suite (`heavenly/tests/
-  conformance.rs`: SGP4, TEME, Earth orientation, two-body, SPK and light
-  time against their references, with the synthetic kernel compiled in)
-  in Node with wasm-bindgen-test. The same suite runs natively.
 
 ## 0.6.0: M6, TLEs and SGP4
 
