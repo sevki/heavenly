@@ -14,8 +14,8 @@ default = ["std"]
 std = ["heavenly-core/std", "heavenly-geo/std"]
 
 [dependencies]
-heavenly-core = { version = "0.5.0", path = "../heavenly-core", default-features = false, features = ["alloc"] }
-heavenly-geo = { version = "0.5.0", path = "../heavenly-geo", default-features = false, features = ["alloc"] }
+heavenly-core = { version = "0.6.0", path = "../heavenly-core", default-features = false, features = ["alloc"] }
+heavenly-geo = { version = "0.6.0", path = "../heavenly-geo", default-features = false, features = ["alloc"] }
 libm = "0.2"
 
 [dev-dependencies]

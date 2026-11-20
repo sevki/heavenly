@@ -62,6 +62,10 @@ well_known! {
     GCRF = 2, "GCRF";
     /// Origin: Earth centre of mass. Axes: ITRF (Earth-fixed, rotating).
     ITRF = 3, "ITRF";
+    /// Origin: Earth centre of mass. Axes: True Equator, Mean Equinox of
+    /// date, the quasi-inertial frame SGP4 works in. `heavenly-geo` links it
+    /// to ITRF through GMST (IAU 1982) and polar motion.
+    TEME = 4, "TEME";
     /// Origin: Moon centre of mass. Axes: ICRF.
     MOON_ICRF = 10, "MOON_ICRF";
     /// Origin: Moon centre of mass. Axes: lunar principal axes (PA).

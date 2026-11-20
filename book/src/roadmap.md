@@ -9,6 +9,7 @@ Each milestone is released as the next minor version; see `CHANGELOG.md`.
 | **M3** Moving objects | `heavenly::orbit`, `spice::SpkLocator` | ✅ done (0.3) |
 | **M4** Local frames and identity | `heavenly::id` | ✅ done (0.4) |
 | **M5** Spatial and operational queries | `heavenly::query`, `heavenly::topology` | ✅ done (0.5) |
+| **M6** TLEs and SGP4 | `orbit::Tle`, `orbit::Sgp4`, `FrameId::TEME` | ✅ done (0.6) |
 
 ## Open design questions
 

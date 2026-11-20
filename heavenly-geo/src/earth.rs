@@ -104,15 +104,66 @@ pub fn earth_rotation_angle(epoch: Epoch, eop: &EarthOrientation) -> Result<f64,
     Ok(era(ut1_days(epoch, eop)?))
 }
 
-/// Registers the ITRF → GCRF edge on a frame graph.
+/// Greenwich Mean Sidereal Time (IAU 1982) in radians, in `[0, 2π)`, and
+/// its rate in radians per second.
+///
+/// This is the angle between the [`FrameId::TEME`](heavenly_core::FrameId::TEME)
+/// equinox and the Greenwich meridian, as defined for SGP4 (Vallado et al.
+/// 2006, AIAA 2006-6753, appendix C). It is not used for GCRF ↔ ITRF, which
+/// uses the Earth Rotation Angle.
+pub fn gmst82(epoch: Epoch, eop: &EarthOrientation) -> Result<(f64, f64), Error> {
+    const DAY_S: f64 = 86_400.0;
+    let (whole, frac) = ut1_days(epoch, eop)?;
+    let t = (whole + frac) / 36_525.0;
+    let g = 67_310.548_41 + (8_640_184.812_866 + (0.093_104 + (-6.2e-6) * t) * t) * t;
+    let dg = 8_640_184.812_866 + (0.093_104 * 2.0 + (-6.2e-6 * 3.0) * t) * t;
+    // JD 2451545.0 is an integer, so the JD fraction of UT1 is `frac`. The
+    // whole days are left out of the sum to keep precision.
+    let theta = libm::fmod(frac + libm::fmod(g / DAY_S, 1.0) + 2.0, 1.0) * TAU;
+    let theta_dot = (1.0 + dg / (DAY_S * 36_525.0)) * TAU / DAY_S;
+    Ok((theta, theta_dot))
+}
+
+/// The kinematic transform from [`FrameId::TEME`](heavenly_core::FrameId::TEME)
+/// (the frame of SGP4 output) to [`FrameId::ITRF`](heavenly_core::FrameId::ITRF):
+/// `R = W · R3(GMST82)`, with `W` the polar-motion matrix (without the tiny
+/// TIO locator `s′`, as in Vallado et al.).
+///
+/// The Earth's rotation rate is applied; the precession and nutation of
+/// TEME itself are neglected, as in the reference implementation.
+pub fn teme_to_itrf(epoch: Epoch, eop: &EarthOrientation) -> Result<Transform, Error> {
+    if !(eop.xp_rad.is_finite() && eop.yp_rad.is_finite()) {
+        return Err(Error::NonFinite);
+    }
+    let (theta, theta_dot) = gmst82(epoch, eop)?;
+    let w = mat::rx(-eop.yp_rad, &mat::ry(-eop.xp_rad, &mat::IDENTITY));
+    let m = mat::mul(&w, &mat::rz(theta, &mat::IDENTITY));
+    let rotation = Rotation::from_matrix(m).ok_or(Error::NonFinite)?;
+    // A point fixed in TEME turns westward, at −θ̇ about the pole (W ẑ).
+    let pole = Vec3::new(w[0][2], w[1][2], w[2][2]);
+    Ok(Transform::new(
+        rotation,
+        Vec3::ZERO,
+        Vec3::ZERO,
+        pole * -theta_dot,
+    ))
+}
+
+/// Registers the ITRF → GCRF and TEME → ITRF edges on a frame graph.
 #[cfg(feature = "alloc")]
 pub fn register<P>(graph: &mut heavenly_core::FrameGraph, eop: P) -> Result<(), Error>
 where
     P: EopProvider + Send + Sync + 'static,
 {
+    use alloc::sync::Arc;
     use heavenly_core::FrameId;
+    let eop = Arc::new(eop);
+    let e = Arc::clone(&eop);
     graph.add_edge(FrameId::ITRF, FrameId::GCRF, move |epoch| {
-        itrf_to_gcrf(epoch, &eop.earth_orientation(epoch)?)
+        itrf_to_gcrf(epoch, &e.earth_orientation(epoch)?)
+    })?;
+    graph.add_edge(FrameId::TEME, FrameId::ITRF, move |epoch| {
+        teme_to_itrf(epoch, &eop.earth_orientation(epoch)?)
     })
 }
 

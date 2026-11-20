@@ -5,7 +5,7 @@ external dependency is [`libm`](https://crates.io/crates/libm). Enable just
 the modules you need:
 
 ```toml
-heavenly = { version = "0.5", default-features = false, features = ["geo", "orbit"] }
+heavenly = { version = "0.6", default-features = false, features = ["geo", "orbit"] }
 ```
 
 | Feature | Default | Enables | Needs a heap |

@@ -11,6 +11,7 @@ SPICE adapter will map `(center, frame)` pairs onto `FrameId`s.
 | `SSB_ICRF` | Solar System barycentre | ICRF (the BCRS) |
 | `GCRF` | Earth centre of mass | ICRF |
 | `ITRF` | Earth centre of mass | Earth-fixed (rotating) |
+| `TEME` | Earth centre of mass | True equator, mean equinox of date (SGP4 output; see [TLEs and SGP4](sgp4.md)) |
 | `MOON_ICRF` | Moon centre of mass | ICRF |
 | `MOON_PA` | Moon centre of mass | Lunar principal axes |
 | `MOON_ME` | Moon centre of mass | Lunar mean-Earth / polar axes |

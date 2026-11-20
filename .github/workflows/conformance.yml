@@ -1,0 +1,89 @@
+name: Conformance
+
+# Checks heavenly against the reference implementations it claims to match:
+#
+#   * SOFA (IAU, via pyerfa): Earth orientation, geodetic conversions, GMST
+#   * SPICE (JPL, via spiceypy): DE440 ephemeris, lunar orientation, two-body
+#     propagation, orbital elements, light time
+#   * Vallado's SGP4 (via the `sgp4` package's C++ build): the official
+#     SGP4/SDP4 verification set in every gravity model and mode
+#   * Skyfield: TEME -> ITRF
+#
+# It regenerates every reference fixture from those libraries and fails if
+# the committed copies differ, then runs the conformance tests (including
+# the real-kernel ones) and writes the worst differences to the job
+# summary. CI runs it on every push and pull request; the weekly run
+# catches drift in the reference libraries or kernels.
+on:
+  workflow_call:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  conformance:
+    name: conformance (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64, os: ubuntu-24.04 }
+          - { arch: arm64, os: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.os }}
+    env:
+      HEAVENLY_KERNELS: ${{ github.workspace }}/kernels
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pyerfa==2.0.1.5 spiceypy==8.4.0 sgp4==2.27 skyfield==1.55 numpy
+      - uses: actions/cache@v4
+        with:
+          path: kernels
+          key: naif-kernels-v2
+      - name: Download NAIF kernels
+        run: |
+          mkdir -p kernels
+          base=https://naif.jpl.nasa.gov/pub/naif/generic_kernels
+          get() { [ -f "kernels/$2" ] || curl -fsSL -o "kernels/$2" "$base/$1/$2"; }
+          get pck pck00011.tpc
+          get lsk naif0012.tls
+          get spk/planets de440s.bsp
+          get pck moon_pa_de440_200625.bpc
+          get fk/satellites moon_de440_250416.tf
+      - name: Regenerate the reference fixtures
+        run: |
+          python3 heavenly-geo/tests/reference/generate.py kernels > heavenly-geo/tests/reference/data.rs
+          python3 heavenly-geo/tests/reference/generate_teme.py > heavenly-geo/tests/reference/teme_data.rs
+          python3 heavenly-spice/tests/reference/generate.py kernels > heavenly-spice/tests/reference/data.rs
+          python3 heavenly-orbit/tests/reference/generate.py > heavenly-orbit/tests/reference/data.rs
+          python3 heavenly-orbit/tests/reference/generate_sgp4.py > heavenly-orbit/tests/reference/sgp4_data.rs
+          python3 heavenly-query/tests/reference/generate.py kernels > heavenly-query/tests/reference/data.rs
+      # On x64 only: the fixtures are generated there, and the reference
+      # libraries' own last bits may differ on other CPUs. The Rust side is
+      # tested on both.
+      - name: The committed fixtures match the reference libraries
+        if: matrix.arch == 'x64'
+        run: git diff --exit-code -- '*/tests/reference' heavenly-spice/tests/data
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Conformance tests
+        run: |
+          set -o pipefail
+          cargo test -p heavenly-geo -p heavenly-spice -p heavenly-orbit -p heavenly-query \
+            --test validation --test sgp4 -- --include-ignored --nocapture 2>&1 | tee conformance.log
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Worst differences against the reference implementations (linux ${{ matrix.arch }})"
+            echo '```'
+            grep -E 'worst|states' conformance.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - run: cargo run -p heavenly --example earth_moon

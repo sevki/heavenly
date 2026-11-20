@@ -202,7 +202,7 @@ fn crates() -> String {
         (340.0, 62.0),
         330.0,
         "heavenly",
-        Some("heavenly = \"0.5\"  ·  crates.io/crates/heavenly"),
+        Some("heavenly = \"0.6\"  ·  crates.io/crates/heavenly"),
         ACCENT,
     );
     s.arrow((340.0, 28.0), (340.0, 39.0), MUTED);
@@ -262,6 +262,7 @@ fn frame_graph() -> String {
     let pa = node(&mut s, (440.0, 230.0), w, "MOON_PA", None, FG);
     let iau = node(&mut s, (600.0, 230.0), w, "MOON_IAU", None, FG);
     let london = node(&mut s, (90.0, 330.0), w, "london (ENU)", None, FG);
+    let teme = node(&mut s, (250.0, 330.0), w, "TEME", None, FG);
     let me = node(&mut s, (440.0, 330.0), w, "MOON_ME", None, FG);
     let shack = node(
         &mut s,
@@ -292,6 +293,7 @@ fn frame_graph() -> String {
     link(&mut s, pa, moon, w, "spice: PCK", -8.0);
     link(&mut s, iau, moon, w, "geo: iau", 8.0);
     link(&mut s, london, itrf, w, "geo: ENU", -8.0);
+    link(&mut s, teme, itrf, w, "geo: GMST82", 16.0);
     link(&mut s, me, pa, w, "spice: FK", 8.0);
     link(&mut s, shack, me, w + 30.0, "geo: ENU", 8.0);
     // Locators hang off frames.
@@ -314,11 +316,12 @@ fn frame_graph() -> String {
     loc(&mut s, (90.0, 410.0), london, "FixedLocator: rack", 75.0);
     loc(
         &mut s,
-        (205.0, 290.0),
+        (337.0, 130.0),
         gcrf,
         "TwoBodyLocator / SampledTrajectory",
-        105.0,
+        96.0,
     );
+    loc(&mut s, (250.0, 410.0), teme, "Sgp4: ISS", 55.0);
     loc(&mut s, (590.0, 40.0), ssb, "SpkLocator: Mars", 75.0);
     s.text(
         (10.0, 462.0),

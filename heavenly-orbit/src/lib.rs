@@ -9,10 +9,14 @@
 //! * [`TwoBodyLocator`]: a [`heavenly_core::Locator`] for a Keplerian orbit.
 //! * [`SampledTrajectory`]: a `Locator` for tabulated states, with explicit
 //!   errors for out-of-coverage epochs and data gaps.
+//! * [`Tle`] and [`Sgp4`]: NORAD two-line element sets and the SGP4/SDP4
+//!   propagator (a port of Vallado's reference implementation), giving
+//!   states in [`FrameId::TEME`](heavenly_core::FrameId::TEME).
 //! * [`gm`]: DE440 gravitational parameters.
 //!
-//! Everything is validated against SPICE (`prop2b`, `conics`, `oscelt`) in
-//! the tests.
+//! Everything is validated in the tests: the two-body code against SPICE
+//! (`prop2b`, `conics`, `oscelt`), and SGP4 against Vallado's C++ over the
+//! official verification set.
 //!
 //! # Example
 //!
@@ -62,9 +66,13 @@ pub mod gm;
 pub mod kepler;
 #[cfg(feature = "alloc")]
 mod sampled;
+pub mod sgp4;
+mod tle;
 mod two_body;
 
 pub use elements::ConicElements;
 #[cfg(feature = "alloc")]
 pub use sampled::SampledTrajectory;
+pub use sgp4::{Gravity, OpsMode, Sgp4, Sgp4Error};
+pub use tle::{checksum, Tle};
 pub use two_body::TwoBodyLocator;
