@@ -15,17 +15,73 @@ use heavenly_core::{
     Epoch, Error, FrameGraph, FrameId, FrameResolver, Locator, Namespace, StateVector, TimeScale,
     Vec3,
 };
+use std::cell::OnceCell;
+
 use heavenly_geo::{earth, Ellipsoid, Geodetic};
-use heavenly_orbit::{gm, ConicElements, Gravity, OpsMode, Sgp4, Tle, TwoBodyLocator};
+use heavenly_orbit::{
+    gm, ConicElements, Drag, ForceModel, Gravity, NumericalPropagator, OpsMode, RadiationPressure,
+    SampledTrajectory, SecularJ2Locator, Sgp4, Tle, Tolerance, TwoBodyLocator,
+};
 use heavenly_query::{find_windows, look_angles, AnalyticSun, Occulter, ShadowKind};
 
-/// What the playground propagates: a two-body conic from the sliders, or a
-/// TLE through SGP4.
+/// What the playground propagates: the slider elements under one of three
+/// [`Dynamics`], or a TLE through SGP4.
 #[derive(Clone, Debug)]
 pub enum Satellite {
     TwoBody(TwoBodyLocator),
+    SecularJ2(SecularJ2Locator),
+    /// Integrated under [`full_forces`] and tabulated over the window set
+    /// by [`Model::set_window`], on first use.
+    Numerical(Box<Numerical>),
     Tle(Box<Sgp4>, Tle),
 }
+
+/// A numerical orbit, integrated and tabulated over a span the first time
+/// it is asked for a state, so that changing the epoch, the elements and
+/// the window in turn integrates once.
+#[derive(Clone, Debug)]
+pub struct Numerical {
+    orbit: NumericalPropagator,
+    span: (Epoch, Epoch),
+    table: OnceCell<Result<SampledTrajectory, Error>>,
+}
+
+impl Numerical {
+    fn table(&self) -> Result<&SampledTrajectory, Error> {
+        self.table
+            .get_or_init(|| self.orbit.sample(self.span.0, self.span.1, SAMPLE_STEP_S))
+            .as_ref()
+            .map_err(|e| e.clone())
+    }
+}
+
+/// How the slider elements move.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Dynamics {
+    /// A fixed conic.
+    TwoBody,
+    /// The conic turned at the Earth's J2 secular rates.
+    SecularJ2,
+    /// Numerical integration under [`full_forces`].
+    Full,
+}
+
+/// The playground's full force model: the Earth's gravity to J6, the Sun
+/// and the Moon, drag (Cd·A/m = 0.01 m²/kg, a small satellite) and solar
+/// radiation pressure (Cr·A/m = 0.01 m²/kg).
+pub fn full_forces() -> ForceModel {
+    ForceModel {
+        drag: Some(Drag::exponential(0.01)),
+        radiation: Some(RadiationPressure {
+            cr_area_m2_per_kg: 0.01,
+        }),
+        ..ForceModel::earth()
+    }
+}
+
+/// Spacing of the tabulated numerical orbit: Hermite interpolation between
+/// samples 30 s apart is good to a few centimetres in a low orbit.
+const SAMPLE_STEP_S: f64 = 30.0;
 
 impl Locator for Satellite {
     type Error = Error;
@@ -40,6 +96,8 @@ impl Locator for Satellite {
     {
         match self {
             Satellite::TwoBody(l) => l.state_at(epoch, frame, resolver),
+            Satellite::SecularJ2(l) => l.state_at(epoch, frame, resolver),
+            Satellite::Numerical(n) => n.table()?.state_at(epoch, frame, resolver),
             Satellite::Tle(s, _) => s.state_at(epoch, frame, resolver),
         }
     }
@@ -74,6 +132,9 @@ pub struct Model {
     epoch: Epoch,
     orbit: TwoBodyLocator,
     sat: Satellite,
+    dynamics: Dynamics,
+    /// Seconds after the epoch that the numerical orbit must cover.
+    window: (f64, f64),
     graph: FrameGraph,
     station: FrameId,
     sites: Vec<FrameId>,
@@ -126,12 +187,74 @@ impl Model {
                     gm_m3_s2: gm::EARTH,
                 },
             }),
+            dynamics: Dynamics::TwoBody,
+            window: (0.0, 3.0 * 3_600.0),
             graph,
             station,
             sites,
         };
         m.set_orbit(420.0, 0.0005, 51.64, 0.0, 0.0, 0.0)?;
         Ok(m)
+    }
+
+    /// Chooses how the slider elements move. Leaves a TLE alone (SGP4 has
+    /// its own perturbations); applies to the next slider orbit.
+    pub fn set_dynamics(&mut self, dynamics: Dynamics) -> Result<(), Error> {
+        self.dynamics = dynamics;
+        if !matches!(self.sat, Satellite::Tle(..)) {
+            self.rebuild()?;
+        }
+        Ok(())
+    }
+
+    /// The span (seconds after the epoch) that queries will cover. With
+    /// [`Dynamics::Full`] the orbit is integrated over it, plus the first
+    /// orbit, and tabulated; queries outside it fail with
+    /// `OutsideCoverage`.
+    pub fn set_window(&mut self, t0_s: f64, t1_s: f64) -> Result<(), Error> {
+        if !(t0_s.is_finite() && t1_s.is_finite() && t1_s > t0_s) {
+            return Err(Error::InvalidInput("the window needs t0 < t1"));
+        }
+        self.window = (t0_s, t1_s);
+        if self.dynamics == Dynamics::Full && !matches!(self.sat, Satellite::Tle(..)) {
+            self.rebuild()?;
+        }
+        Ok(())
+    }
+
+    // Puts the slider orbit under the current dynamics.
+    fn rebuild(&mut self) -> Result<(), Error> {
+        let el = self.orbit.elements;
+        self.sat = match self.dynamics {
+            Dynamics::TwoBody => Satellite::TwoBody(self.orbit),
+            // The sliders are osculating elements; the secular model wants
+            // mean ones.
+            Dynamics::SecularJ2 => {
+                Satellite::SecularJ2(SecularJ2Locator::earth_from_osculating(el)?)
+            }
+            Dynamics::Full => {
+                let period = el.period_s().unwrap_or(0.0);
+                let lo = self.window.0.min(0.0) - SAMPLE_STEP_S;
+                let hi = self.window.1.max(period) + SAMPLE_STEP_S;
+                let (r, v) = el.state_at(el.epoch)?;
+                let mut orbit = NumericalPropagator::new(
+                    StateVector::new(FrameId::GCRF, el.epoch, r, v),
+                    full_forces(),
+                )?;
+                // About 10 cm a day in a low orbit: below what the drawing
+                // shows, and 2.5 times faster than the default.
+                orbit.tolerance = Tolerance {
+                    relative: 1e-11,
+                    absolute: 1e-8,
+                };
+                Satellite::Numerical(Box::new(Numerical {
+                    orbit,
+                    span: (self.at(lo)?, self.at(hi)?),
+                    table: OnceCell::new(),
+                }))
+            }
+        };
+        Ok(())
     }
 
     /// Moves the ground station (London by default) that elevations, passes
@@ -175,8 +298,8 @@ impl Model {
             ns.min(999_999_999),
         )?;
         self.orbit.elements.epoch = self.epoch;
-        if let Satellite::TwoBody(l) = &mut self.sat {
-            l.elements.epoch = self.epoch;
+        if !matches!(self.sat, Satellite::Tle(..)) {
+            self.rebuild()?;
         }
         Ok(())
     }
@@ -339,8 +462,7 @@ impl Model {
             ));
         }
         self.orbit.elements = el;
-        self.sat = Satellite::TwoBody(self.orbit);
-        Ok(())
+        self.rebuild()
     }
 
     fn at(&self, t_s: f64) -> Result<Epoch, Error> {
@@ -350,8 +472,8 @@ impl Model {
     /// `[period s, perigee alt km, apogee alt km, perigee speed km/s, apogee speed km/s]`.
     pub fn info(&self) -> Vec<f64> {
         let (a, e, period) = match &self.sat {
-            Satellite::TwoBody(l) => {
-                let el = &l.elements;
+            Satellite::TwoBody(_) | Satellite::SecularJ2(_) | Satellite::Numerical(_) => {
+                let el = &self.orbit.elements;
                 (
                     el.periapsis_m / (1.0 - el.eccentricity),
                     el.eccentricity,
@@ -427,6 +549,25 @@ impl Model {
                     ..l.elements
                 }
                 .state_at(l.elements.epoch)?
+                .0
+            }
+            // The periapsis turns with the node and the apsides.
+            Satellite::SecularJ2(l) => {
+                ConicElements {
+                    mean_anomaly_rad: 0.0,
+                    ..l.elements_at(epoch)
+                }
+                .state_at(epoch)?
+                .0
+            }
+            // The osculating periapsis: where the current conic is lowest.
+            Satellite::Numerical(_) => {
+                let el = ConicElements::from_state(s.position_m, s.velocity_m_s, epoch, gm::EARTH)?;
+                ConicElements {
+                    mean_anomaly_rad: 0.0,
+                    ..el
+                }
+                .state_at(epoch)?
                 .0
             }
             // SGP4 has no fixed periapsis; show the nearest point of the
@@ -616,7 +757,7 @@ impl Model {
 
 #[cfg(target_arch = "wasm32")]
 mod bindings {
-    use super::{Error, Model, SITES};
+    use super::{Dynamics, Error, Model, SITES};
     use wasm_bindgen::prelude::*;
 
     fn js(e: Error) -> JsError {
@@ -674,6 +815,26 @@ mod bindings {
         #[wasm_bindgen(js_name = setTle)]
         pub fn set_tle(&mut self, text: &str) -> Result<(), JsError> {
             self.model.set_tle(text).map_err(js)
+        }
+
+        /// How slider orbits move: 0 two-body, 1 J2 secular, 2 numerical
+        /// with the full force model.
+        #[wasm_bindgen(js_name = setDynamics)]
+        pub fn set_dynamics(&mut self, kind: u8) -> Result<(), JsError> {
+            let d = match kind {
+                0 => Dynamics::TwoBody,
+                1 => Dynamics::SecularJ2,
+                2 => Dynamics::Full,
+                _ => return Err(JsError::new("dynamics: 0, 1 or 2")),
+            };
+            self.model.set_dynamics(d).map_err(js)
+        }
+
+        /// The span (seconds after the epoch) queries will cover; the
+        /// numerical orbit is integrated over it.
+        #[wasm_bindgen(js_name = setWindow)]
+        pub fn set_window(&mut self, t0_s: f64, t1_s: f64) -> Result<(), JsError> {
+            self.model.set_window(t0_s, t1_s).map_err(js)
         }
 
         /// Moves the ground station: latitude, longitude (°), height (m).
@@ -928,5 +1089,51 @@ mod tests {
         m.set_epoch(2026, 11, 19, 17, 0, 0.0).unwrap();
         m.set_orbit(400.0, 0.1, 10.0, 0.0, 0.0, 0.0).unwrap();
         assert_eq!(m.orbit_path(100).unwrap().len(), 400);
+    }
+
+    #[test]
+    fn dynamics_agree_at_the_epoch_and_drift_apart() {
+        let mut m = Model::new().unwrap();
+        m.set_orbit(700.0, 0.001, 98.2, 40.0, 0.0, 0.0).unwrap();
+        let day = 86_400.0;
+        let pos = |m: &Model, t: f64| {
+            let s = m.state(t).unwrap();
+            Vec3::new(s[0], s[1], s[2])
+        };
+        let two_body = (pos(&m, 0.0), pos(&m, day));
+        m.set_dynamics(Dynamics::SecularJ2).unwrap();
+        let secular = (pos(&m, 0.0), pos(&m, day));
+        m.set_window(0.0, 2.0 * day).unwrap();
+        m.set_dynamics(Dynamics::Full).unwrap();
+        let started = std::time::Instant::now();
+        let full = (pos(&m, 0.0), pos(&m, day));
+        eprintln!(
+            "two days, full force model, integrated and tabulated: {:?}",
+            started.elapsed()
+        );
+        // The same start: exactly for the numerical orbit, and within J2's
+        // short-period amplitude (km) for the mean-element model…
+        eprintln!(
+            "secular start is {:.1} km from the osculating state",
+            (secular.0 - two_body.0).norm()
+        );
+        assert!((secular.0 - two_body.0).norm() < 20.0);
+        assert!((full.0 - two_body.0).norm() < 1e-3);
+        // …and after a day J2 has moved the satellite far from the fixed
+        // conic, while the secular model stays within tens of kilometres
+        // of the full one (short-period terms, drag, Sun and Moon).
+        let apart = |a: Vec3, b: Vec3| (a - b).norm();
+        eprintln!(
+            "after a day: two-body is {:.0} km from full, secular J2 {:.1} km",
+            apart(two_body.1, full.1),
+            apart(secular.1, full.1)
+        );
+        assert!(apart(two_body.1, full.1) > 100.0);
+        assert!(apart(secular.1, full.1) < 50.0);
+        // Outside the window the numerical orbit is not guessed.
+        assert!(m.state(3.0 * day).is_err());
+        // A TLE ignores the dynamics; going back to sliders restores it.
+        m.set_tle(ISS_TLE).unwrap();
+        assert!(m.state(3.0 * day).is_ok());
     }
 }

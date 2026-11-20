@@ -69,6 +69,7 @@ jobs:
           python3 heavenly-orbit/tests/reference/generate.py > heavenly-orbit/tests/reference/data.rs
           python3 heavenly-orbit/tests/reference/generate_sgp4.py > heavenly-orbit/tests/reference/sgp4_data.rs
           python3 heavenly-orbit/tests/reference/generate_omm.py > heavenly-orbit/tests/reference/omm_data.rs
+          python3 heavenly-orbit/tests/reference/generate_numerical.py kernels > heavenly-orbit/tests/reference/numerical_data.rs
           python3 heavenly-query/tests/reference/generate.py kernels > heavenly-query/tests/reference/data.rs
           python3 heavenly-query/tests/reference/generate_shadow.py kernels > heavenly-query/tests/reference/shadow_data.rs
       # The fixtures are generated on x64, and that is where they must match
@@ -96,7 +97,7 @@ jobs:
         run: |
           set -o pipefail
           cargo test -p heavenly-geo -p heavenly-spice -p heavenly-orbit -p heavenly-query \
-            --test validation --test sgp4 --test eop --test shadow --test omm --test catalog -- --include-ignored --nocapture 2>&1 | tee conformance.log
+            --test validation --test sgp4 --test eop --test shadow --test omm --test catalog --test numerical -- --include-ignored --nocapture 2>&1 | tee conformance.log
       - name: Summary
         if: always()
         run: |

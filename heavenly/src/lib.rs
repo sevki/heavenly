@@ -20,7 +20,7 @@
 //! |--------|---------|--------------|
 //! | [`geo`] | `geo` | ellipsoids, geodetic coordinates, Earth orientation, IAU Moon/Mars models |
 //! | [`spice`] | `spice` | JPL SPK / binary PCK kernels (DE440 ephemerides, lunar orientation) |
-//! | [`orbit`] | `orbit` | two-body propagation, orbital elements, sampled trajectories |
+//! | [`orbit`] | `orbit` | two-body, SGP4, J2 secular and numerical (J2–J6, drag, Sun, Moon) propagation, orbital elements, sampled trajectories |
 //! | [`id`] | `id` | stable identities, aliases, and a registry of mounted local frames |
 //! | [`query`] | `query` | light time, look angles, line of sight, visibility windows |
 //! | [`topology`] | `topology` | failure domains and jurisdictions (policy, not coordinates) |
@@ -90,7 +90,8 @@ pub use heavenly_geo as geo;
 #[cfg(feature = "spice")]
 pub use heavenly_spice as spice;
 
-/// Two-body propagation, orbital elements and sampled trajectories.
+/// Orbit propagation (two-body, SGP4, J2 secular, numerical with
+/// perturbations), orbital elements and sampled trajectories.
 #[cfg(feature = "orbit")]
 pub use heavenly_orbit as orbit;
 

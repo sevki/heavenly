@@ -6,7 +6,51 @@ within a milestone. Before 1.0, a minor bump may break the API.
 
 ## Unreleased
 
+M9, perturbations. Everything is new API, except that `heavenly-query`
+now depends on `heavenly-orbit` for the analytic Sun.
+
 ### Added
+- `heavenly::orbit::NumericalPropagator`: integrates an orbit in GCRF under
+  a `ForceModel`, with an adaptive Dormand–Prince 5(4) integrator that lands
+  on each requested epoch. It has `propagate`, `for_each` (one pass through
+  many epochs, either side of the start), `sample` (to a
+  `SampledTrajectory`), and `Locator`. The default `Tolerance` is 1e-13,
+  about 1 mm per day in a low orbit. A re-entry is an error, not a state
+  underground.
+- `heavenly::orbit::forces`: `ForceModel` (`two_body`, `earth_j2`,
+  `earth`), with:
+  - `Zonal` gravity to J6 (EGM2008) about the Earth's precessing and
+    nutating axis;
+  - `Drag` (Vallado's exponential atmosphere, turning with the Earth);
+  - `RadiationPressure` (a cannonball in a cylindrical shadow);
+  - `ThirdBody` Sun and Moon.
+- `heavenly::orbit::SecularJ2Locator`: a conic whose node, periapsis and
+  mean anomaly advance at the J2 secular rates, as cheap as two-body.
+  `earth_from_osculating` removes J2's short-period term from the
+  semi-major axis (Kozai). Without it, elements taken from a state drift
+  1,300 km a day in a low orbit; with it, the secular orbit stays within
+  6 km of the numerical one over a day.
+- `heavenly::orbit::analytic`:
+  - `sun_position_m` (moved from `heavenly-query`);
+  - `moon_position_m` (Montenbruck & Gill: 0.08° and 0.13 % against DE440
+    over 1950–2050);
+  - `earth_pole` (IAU 2006 precession and the main nutation terms: 0.17″
+    against SOFA).
+- `heavenly::query::AnalyticMoon`, a `Locator` for the Moon that needs no
+  kernels.
+- Conformance (`heavenly-orbit/tests/numerical.rs`, fixtures from
+  `generate_numerical.py`):
+  - the zonal field against explicit Legendre polynomials (5e-16);
+  - whole orbits against an independent RK4 implementation with DE440 and
+    SOFA (2 mm per day with the same forces; 0.35 m per day in a low orbit
+    with the analytic series);
+  - conservation of energy and axial angular momentum;
+  - drag decay against the analytic rate (0.3 %).
+- Book: a [Perturbations](book/src/perturbations.md) chapter, with measured
+  accuracy and cost.
+- Playground: a **Dynamics** menu that moves the slider orbit as a fixed
+  conic, under J2 secular rates, or by numerical integration with the full
+  force model.
 - `FrameGraph::remove_edge`, which removes the edge between two frames in
   either direction. With `add_fixed`, it moves a frame such as a ground
   station.

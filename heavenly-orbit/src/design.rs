@@ -45,8 +45,8 @@ pub fn walker_delta(
 }
 
 /// Earth's J2 (EGM2008, unnormalised) and the equatorial radius it goes with.
-const J2: f64 = 1.082_626_68e-3;
-const R_EQ: f64 = 6_378_137.0;
+const J2: f64 = crate::forces::EARTH_ZONALS[0];
+const R_EQ: f64 = crate::forces::EARTH_RADIUS_M;
 
 /// The rate at which a sun-synchronous orbit's node must turn: once per
 /// tropical year (365.242 19 days), in rad/s.

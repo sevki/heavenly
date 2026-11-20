@@ -13,6 +13,7 @@
 - [Earth, Moon and Mars](earth-and-moon.md)
 - [Ephemerides (SPICE)](spice.md)
 - [Orbits and trajectories](orbits.md)
+- [Perturbations](perturbations.md)
 - [TLEs and SGP4](sgp4.md)
 - [Identity and local frames](identity.md)
 - [Signals and visibility](signals.md)

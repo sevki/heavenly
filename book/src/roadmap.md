@@ -12,6 +12,8 @@ Each milestone is released as the next minor version; see `CHANGELOG.md`.
 | **M6** TLEs and SGP4 | `orbit::Tle`, `orbit::Sgp4`, `FrameId::TEME` | ✅ done (0.6) |
 | **M7** Earth orientation data, sunlight, batch operations | `geo::eop`, `query::{AnalyticSun, eclipses}`, `*_batch` with SIMD, `id::Registry` trait | ✅ done (0.7) |
 | **M8** Catalogues and constellations | `orbit::{Omm, Catalog}`, `query::catalog`, `design::walker_delta` | ✅ done (0.8) |
+| **M9** Perturbations | `orbit::{NumericalPropagator, ForceModel, SecularJ2Locator, analytic}`, `query::AnalyticMoon` | ✅ done (unreleased) |
+| **M10** Covariance and collision probability | covariance on states and through transforms, probability of collision for conjunctions | in progress |
 
 ## Open design questions
 

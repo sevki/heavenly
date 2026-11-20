@@ -12,6 +12,11 @@
 //! * [`Tle`] and [`Sgp4`]: NORAD two-line element sets and the SGP4/SDP4
 //!   propagator (a port of Vallado's reference implementation), giving
 //!   states in [`FrameId::TEME`](heavenly_core::FrameId::TEME).
+//! * [`SecularJ2Locator`]: a conic whose plane and apsides turn at the
+//!   Earth's J2 secular rates, as cheap as two-body.
+//! * [`NumericalPropagator`]: integrates the equations of motion under a
+//!   [`ForceModel`]: zonal gravity to J6, atmospheric drag, solar radiation
+//!   pressure, and the Sun and the Moon ([`analytic`] series, or your own).
 //! * [`gm`]: DE440 gravitational parameters.
 //!
 //! Everything is validated in the tests: the two-body code against SPICE
@@ -61,16 +66,20 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+pub mod analytic;
 #[cfg(feature = "alloc")]
 mod catalog;
 pub mod design;
 mod elements;
+pub mod forces;
 pub mod gm;
 pub mod kepler;
+mod numerical;
 #[cfg(feature = "alloc")]
 mod omm;
 #[cfg(feature = "alloc")]
 mod sampled;
+mod secular;
 pub mod sgp4;
 mod tle;
 mod two_body;
@@ -78,10 +87,13 @@ mod two_body;
 #[cfg(feature = "alloc")]
 pub use catalog::{Catalog, CatalogEntry, Rejected};
 pub use elements::ConicElements;
+pub use forces::{Drag, ForceModel, RadiationPressure, ThirdBody, Zonal};
+pub use numerical::{NumericalPropagator, Tolerance};
 #[cfg(feature = "alloc")]
 pub use omm::Omm;
 #[cfg(feature = "alloc")]
 pub use sampled::SampledTrajectory;
+pub use secular::SecularJ2Locator;
 pub use sgp4::{Gravity, OpsMode, Sgp4, Sgp4Error};
 pub use tle::{checksum, Tle};
 pub use two_body::TwoBodyLocator;

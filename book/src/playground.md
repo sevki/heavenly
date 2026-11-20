@@ -2,12 +2,18 @@
 
 An interactive orbit explorer. Everything on this page is computed in your
 browser by the heavenly crates, compiled to WebAssembly with `wasm-pack`
-(a 174 KB module). The page is a React app built on `@heavenly/react`, the
+(a 193 KB module). The page is a React app built on `@heavenly/react`, the
 library's React components (`<Globe>`, `<GroundTrack>`, `<PassTable>`), which
 draw with WebGL2. Only the drawing is JavaScript.
 
-* **Orbit**: `heavenly::orbit` propagates the slider elements
-  (`TwoBodyLocator`) or a pasted TLE (`Sgp4`, in TEME).
+* **Orbit**: `heavenly::orbit` propagates the slider elements or a pasted
+  TLE (`Sgp4`, in TEME). The **Dynamics** menu chooses how the slider
+  elements move (see [Perturbations](perturbations.md)):
+  * as a fixed conic (`TwoBodyLocator`);
+  * turned by the Earth's oblateness (`SecularJ2Locator`);
+  * integrated numerically with J2–J6, drag, sunlight pressure, the Sun and
+    the Moon (`NumericalPropagator`, for a small satellite with
+    Cd·A/m = Cr·A/m = 0.01 m²/kg).
 * **Earth's rotation**: `heavenly::geo` turns GCRF into ITRF at every frame
   (IAU 2006 precession, nutation and the Earth Rotation Angle). That is why
   the graticule turns and the ground track drifts west on each orbit.
@@ -47,7 +53,17 @@ on this page calls an external service.
   figure-eight.
 * **Molniya**: a high, eccentric orbit whose apogee hangs over northern
   latitudes for hours. The 63.4° inclination is chosen so that Earth's
-  oblateness does not rotate the apogee. That effect is not modelled here.
+  oblateness does not rotate the apogee. Set **Dynamics** to *J2 secular*,
+  then move the inclination to 50°. The "periapsis" marker on the globe now
+  creeps around the orbit from one day to the next, and the apogee leaves
+  the north. Set it back to 63.4° and the marker stops.
+* **J2 vs two-body**: pick **Sun-synchronous**, move the time slider to the
+  end, and switch **Dynamics** between *Two-body* and *J2 secular*. Under
+  J2 the node has turned about 0.2° east in those five hours, and the
+  satellite is about 90 km from where the fixed ellipse puts it.
+  *Full* agrees with *J2 secular* to within a few kilometres. The rest is
+  J2's short-period wobble, the higher harmonics, drag, and the Sun and
+  Moon.
 * **Epoch**: change the date and the same orbit crosses different longitudes,
   because the Earth Rotation Angle is different.
 * **Constellation**: an illustrative 24-satellite Walker shell, 24/4/1
@@ -87,11 +103,14 @@ on this page calls an external service.
 
 ## What it does not model
 
-With the sliders, the orbit is a pure two-body conic: no Earth oblateness
-(J2), drag, or Sun and Moon perturbations, so a real ISS track drifts from
-it within hours. A TLE goes through SGP4, which includes those effects, to
-SGP4's own accuracy of about a kilometre near the TLE's epoch. The Sun is
-the analytic series, good to 32″.
+With *Two-body* dynamics, the slider orbit is a fixed conic, so a real ISS
+track drifts from it within hours. *J2 secular* adds the oblateness's
+steady effects but not its short-period wobble. *Full* integrates the
+perturbations listed in [Perturbations](perturbations.md), with a static
+atmosphere and the analytic Sun and Moon; it has no tesseral harmonics. A
+TLE goes through SGP4, which has its own perturbation model, to SGP4's own
+accuracy of about a kilometre near the TLE's epoch. The Sun is the
+analytic series, good to 32″.
 Earth orientation uses zero EOP, which is good to a few hundred metres. See
 [Orbits and trajectories](orbits.md) and [Earth, Moon and Mars](earth-and-moon.md)
 for the models and their measured accuracy.

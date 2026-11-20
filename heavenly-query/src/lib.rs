@@ -32,7 +32,7 @@ pub use light_time::{light_time, Direction, LightTime, SPEED_OF_LIGHT_M_S};
 #[cfg(feature = "alloc")]
 pub use shadow::{eclipses, Eclipses};
 pub use shadow::{Shadow, ShadowKind};
-pub use sun::{AnalyticSun, AU_M, SUN_RADIUS_M};
+pub use sun::{AnalyticMoon, AnalyticSun, AU_M, SUN_RADIUS_M};
 #[cfg(feature = "alloc")]
 pub use visibility::find_windows;
 pub use visibility::{look_angles, LookAngles, Occulter, Window};
