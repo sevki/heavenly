@@ -10,7 +10,8 @@ Each milestone is released as the next minor version; see `CHANGELOG.md`.
 | **M4** Local frames and identity | `heavenly::id` | ✅ done (0.4) |
 | **M5** Spatial and operational queries | `heavenly::query`, `heavenly::topology` | ✅ done (0.5) |
 | **M6** TLEs and SGP4 | `orbit::Tle`, `orbit::Sgp4`, `FrameId::TEME` | ✅ done (0.6) |
-| **M7** Earth orientation data, sunlight, batch operations, catalogues | `geo::eop`, `query::{AnalyticSun, eclipses}`, `*_batch` with SIMD, `id::Registry` trait, `orbit::{Omm, Catalog}`, `query::catalog` | ✅ done (0.7) |
+| **M7** Earth orientation data, sunlight, batch operations | `geo::eop`, `query::{AnalyticSun, eclipses}`, `*_batch` with SIMD, `id::Registry` trait | ✅ done (0.7) |
+| **M8** Catalogues and constellations | `orbit::{Omm, Catalog}`, `query::catalog`, `design::walker_delta` | in progress (unreleased) |
 
 ## Open design questions
 
