@@ -23,6 +23,9 @@ within a milestone. Before 1.0, a minor bump may break the API.
     TDB intervals.
 - Book: an *Orbits and trajectories* chapter, plus ten diagrams generated
   from the library by `cargo run -p heavenly-diagrams`.
+- Book: an interactive **Playground**, with a 3D orbit view, a ground track
+  and London visibility. It is computed in the browser by the heavenly crates
+  compiled to WebAssembly (`heavenly-viz`, 86 KB, no JS bindings).
 
 ### Validation
 - Checked against SPICE `prop2b`, `conics` and `oscelt`: worst relative error

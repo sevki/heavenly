@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["heavenly-core", "heavenly-geo", "heavenly-spice", "heavenly-orbit", "diagrams"]
+members = ["heavenly-core", "heavenly-geo", "heavenly-spice", "heavenly-orbit", "diagrams", "viz"]
 
 [workspace.package]
 # One minor version per milestone: M1 = 0.1, M2 = 0.2, M3 = 0.3, ...
@@ -9,3 +9,13 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/sevki/heavenly"
 rust-version = "1.70"
+
+# Size-optimised build for the book's WebAssembly playground:
+#   cargo build -p heavenly-viz --profile wasm --target wasm32-unknown-unknown
+[profile.wasm]
+inherits = "release"
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

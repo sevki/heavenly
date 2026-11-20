@@ -7,6 +7,7 @@ a lunar base or a spacecraft in transit.
 > **Identity is stable; position is time-dependent; reference frames provide
 > meaning; placement topology is policy.**
 
+* **Playground:** an interactive orbit and ground-track explorer in the book, running the library as WebAssembly.
 * **Book:** [`book/`](book/src/SUMMARY.md), built with mdbook (`mdbook serve book`). Published to GitHub Pages from `main`, with API docs under `/api/`.
 * **Design proposal:** [`docs/design.md`](docs/design.md).
 

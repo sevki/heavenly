@@ -1,0 +1,359 @@
+// heavenly playground: the physics runs in WebAssembly (crate `heavenly-viz`,
+// built from the heavenly crates); this file only draws and wires controls.
+(function () {
+  "use strict";
+  const root = document.getElementById("hv-play");
+  if (!root) return;
+  const $ = (id) => document.getElementById(id);
+  const R_EARTH = 6378.137;
+  const DEG = Math.PI / 180;
+
+  let wasm = null;
+  let land = null;
+  let t = 0; // seconds after the epoch
+  let playing = true;
+  let lastFrame = null;
+  let view = { az: 35 * DEG, el: 22 * DEG, zoom: 1 };
+  let path = [];
+  let track = [];
+  let info = [];
+
+  // --- WebAssembly ----------------------------------------------------------
+  function read(n) {
+    return Array.from(new Float64Array(wasm.memory.buffer, wasm.out_ptr(), n));
+  }
+  function error() {
+    return String.fromCharCode(...read(wasm.last_error()));
+  }
+  function call(fn, ...args) {
+    const n = wasm[fn](...args);
+    if (n === 0) throw new Error(error());
+    return read(n);
+  }
+
+  async function load() {
+    try {
+      const [bytes, landData] = await Promise.all([
+        fetch("playground/heavenly_viz.wasm").then((r) => {
+          if (!r.ok) throw new Error("heavenly_viz.wasm not found (" + r.status + ")");
+          return r.arrayBuffer();
+        }),
+        fetch("playground/land-110m.json").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      ]);
+      const { instance } = await WebAssembly.instantiate(bytes, {});
+      wasm = instance.exports;
+      land = landData;
+      $("hv-status").textContent = "";
+      root.classList.add("hv-ready");
+      applyOrbit();
+      requestAnimationFrame(frame);
+    } catch (e) {
+      $("hv-status").textContent =
+        "The playground could not start: " + e.message +
+        ". Build it with `book/build-playground.sh` and serve the book over HTTP (mdbook serve).";
+    }
+  }
+
+  // --- Controls ---------------------------------------------------------------
+  const ALT_MIN = 150, ALT_MAX = 40000;
+  const altFromSlider = (v) => ALT_MIN * Math.pow(ALT_MAX / ALT_MIN, v / 1000);
+  const sliderFromAlt = (a) => (1000 * Math.log(a / ALT_MIN)) / Math.log(ALT_MAX / ALT_MIN);
+  const presets = {
+    iss: { alt: 420, e: 0.0005, i: 51.64, raan: 0, argp: 0 },
+    sso: { alt: 700, e: 0.001, i: 98.2, raan: 40, argp: 0 },
+    molniya: { alt: 600, e: 0.74, i: 63.4, raan: 300, argp: 270 },
+    gps: { alt: 20180, e: 0.005, i: 55, raan: 120, argp: 0 },
+    geo: { alt: 35786, e: 0, i: 0.05, raan: 0, argp: 0 },
+  };
+
+  function setControls(p) {
+    $("hv-alt").value = sliderFromAlt(p.alt);
+    $("hv-e").value = p.e;
+    $("hv-i").value = p.i;
+    $("hv-raan").value = p.raan;
+    $("hv-argp").value = p.argp;
+  }
+
+  function applyOrbit() {
+    const alt = altFromSlider(+$("hv-alt").value);
+    const e = +$("hv-e").value, i = +$("hv-i").value;
+    const raan = +$("hv-raan").value, argp = +$("hv-argp").value;
+    $("hv-alt-v").textContent = alt.toFixed(0) + " km";
+    $("hv-e-v").textContent = e.toFixed(3);
+    $("hv-i-v").textContent = i.toFixed(1) + "°";
+    $("hv-raan-v").textContent = raan.toFixed(0) + "°";
+    $("hv-argp-v").textContent = argp.toFixed(0) + "°";
+    if (!wasm) return;
+    const d = new Date($("hv-epoch").value + "Z");
+    try {
+      if (isNaN(d)) throw new Error("invalid epoch");
+      if (wasm.set_epoch(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()) !== 0) throw new Error(error());
+      if (wasm.set_orbit(alt, e, i, raan, argp, 0) !== 0) throw new Error(error());
+      info = call("info");
+      path = chunk(call("orbit_path", 361), 3);
+      const span = Math.min(Math.max(3 * info[0], 3 * 3600), 2 * 86400);
+      $("hv-time").max = span;
+      track = chunk(call("ground_track", 0, span, 900), 3);
+      $("hv-status").textContent = "";
+    } catch (err) {
+      $("hv-status").textContent = err.message;
+    }
+  }
+
+  function chunk(a, n) {
+    const out = [];
+    for (let k = 0; k + n <= a.length; k += n) out.push(a.slice(k, k + n));
+    return out;
+  }
+
+  for (const id of ["hv-alt", "hv-e", "hv-i", "hv-raan", "hv-argp", "hv-epoch"]) {
+    $(id).addEventListener("input", applyOrbit);
+  }
+  for (const [name, p] of Object.entries(presets)) {
+    const b = $("hv-preset-" + name);
+    if (b) b.addEventListener("click", () => { setControls(p); t = 0; applyOrbit(); });
+  }
+  $("hv-play-btn").addEventListener("click", () => {
+    playing = !playing;
+    $("hv-play-btn").textContent = playing ? "Pause" : "Play";
+  });
+  $("hv-time").addEventListener("input", () => { t = +$("hv-time").value; });
+
+  // Drag to rotate, wheel to zoom.
+  const oc = $("hv-orbit");
+  let drag = null;
+  oc.addEventListener("pointerdown", (e) => { drag = [e.clientX, e.clientY, view.az, view.el]; oc.setPointerCapture(e.pointerId); });
+  oc.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    view.az = drag[2] - (e.clientX - drag[0]) * 0.008;
+    view.el = Math.max(-1.5, Math.min(1.5, drag[3] + (e.clientY - drag[1]) * 0.008));
+  });
+  oc.addEventListener("pointerup", () => { drag = null; });
+  oc.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    view.zoom = Math.max(0.3, Math.min(8, view.zoom * Math.exp(-e.deltaY * 0.001)));
+  }, { passive: false });
+
+  // --- Drawing ----------------------------------------------------------------
+  function colours() {
+    const cs = getComputedStyle(document.documentElement);
+    const v = (n, d) => (cs.getPropertyValue(n).trim() || d);
+    return { fg: v("--fg", "#333"), accent: v("--links", "#1f6feb"), muted: v("--icons", "#888"), bg: v("--bg", "#fff"), hot: "#e8590c" };
+  }
+
+  function fit(canvas) {
+    const r = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [ctx, r.width, r.height];
+  }
+
+  function camera(w, h, rmax) {
+    const { az, el, zoom } = view;
+    const right = [-Math.sin(az), Math.cos(az), 0];
+    const up = [-Math.sin(el) * Math.cos(az), -Math.sin(el) * Math.sin(az), Math.cos(el)];
+    const toward = [Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el)];
+    const s = (zoom * 0.45 * Math.min(w, h)) / rmax;
+    const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    return {
+      s,
+      p: (v) => [w / 2 + dot(v, right) * s, h / 2 - dot(v, up) * s],
+      depth: (v) => dot(v, toward),
+    };
+  }
+
+  function drawOrbit(c, now) {
+    const [ctx, w, h] = fit(oc);
+    ctx.clearRect(0, 0, w, h);
+    const rmax = Math.max(...path.map((q) => Math.hypot(q[0], q[1], q[2])), R_EARTH * 1.5);
+    const cam = camera(w, h, rmax);
+    const [ex, ey] = cam.p([0, 0, 0]);
+    const er = R_EARTH * cam.s;
+    // Earth disc.
+    ctx.beginPath(); ctx.arc(ex, ey, er, 0, 2 * Math.PI);
+    ctx.fillStyle = c.accent; ctx.globalAlpha = 0.12; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = c.fg; ctx.lineWidth = 1.2; ctx.stroke();
+    // Rotating graticule: ITRF lines mapped to GCRF with the Earth-orientation matrix.
+    const m = now.earth; // GCRS→ITRS, row-major; ITRS→GCRS is its transpose
+    const toGcrs = (v) => [
+      m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
+      m[1] * v[0] + m[4] * v[1] + m[7] * v[2],
+      m[2] * v[0] + m[5] * v[1] + m[8] * v[2],
+    ];
+    const sph = (lat, lon) => [R_EARTH * Math.cos(lat) * Math.cos(lon), R_EARTH * Math.cos(lat) * Math.sin(lon), R_EARTH * Math.sin(lat)];
+    ctx.strokeStyle = c.muted; ctx.lineWidth = 0.7;
+    const strokeFront = (pts) => {
+      ctx.beginPath(); let pen = false;
+      for (const v of pts) {
+        const g = toGcrs(v);
+        if (cam.depth(g) < 0) { pen = false; continue; }
+        const [x, y] = cam.p(g);
+        pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y); pen = true;
+      }
+      ctx.stroke();
+    };
+    for (let lon = 0; lon < 360; lon += 30) {
+      const pts = []; for (let lat = -90; lat <= 90; lat += 5) pts.push(sph(lat * DEG, lon * DEG)); strokeFront(pts);
+    }
+    for (let lat = -60; lat <= 60; lat += 30) {
+      const pts = []; for (let lon = 0; lon <= 360; lon += 5) pts.push(sph(lat * DEG, lon * DEG)); strokeFront(pts);
+    }
+    if (land) {
+      ctx.strokeStyle = c.fg; ctx.lineWidth = 0.8;
+      for (const r of land.rings) {
+        const pts = []; for (let k = 0; k < r.length; k += 2) pts.push(sph(r[k + 1] * DEG, r[k] * DEG)); strokeFront(pts);
+      }
+    }
+    // Axes.
+    const axis = (v, label) => {
+      const [x, y] = cam.p(v);
+      ctx.strokeStyle = c.muted; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(x, y); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = c.muted; ctx.font = "12px sans-serif"; ctx.fillText(label, x + 4, y);
+    };
+    axis([rmax * 1.05, 0, 0], "x (GCRF)");
+    axis([0, 0, rmax * 0.9], "z");
+    // Orbit: hidden where it passes behind the Earth.
+    ctx.lineWidth = 2; ctx.strokeStyle = c.accent;
+    for (let k = 1; k < path.length; k++) {
+      const a = path[k - 1], b = path[k];
+      const [x0, y0] = cam.p(a), [x1, y1] = cam.p(b);
+      const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+      const [mx, my] = cam.p(mid);
+      const hidden = Math.hypot(mx - ex, my - ey) < er && cam.depth(mid) < 0;
+      const below = mid[2] < 0;
+      ctx.globalAlpha = hidden ? 0.15 : 1;
+      ctx.setLineDash(below ? [5, 4] : []);
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    }
+    ctx.globalAlpha = 1; ctx.setLineDash([]);
+    // Periapsis and the satellite.
+    const [px, py] = cam.p(now.peri);
+    ctx.fillStyle = c.fg; ctx.beginPath(); ctx.arc(px, py, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = "12px sans-serif"; ctx.fillText("periapsis", px + 6, py - 4);
+    const sat = now.pos;
+    const [sx, sy] = cam.p(sat);
+    const behind = Math.hypot(sx - ex, sy - ey) < er && cam.depth(sat) < 0;
+    ctx.globalAlpha = behind ? 0.3 : 1;
+    ctx.fillStyle = c.hot; ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 2 * Math.PI); ctx.fill();
+    const v = now.vel, vs = 0.08 * rmax / Math.max(Math.hypot(...v), 1e-9);
+    const [vx, vy] = cam.p([sat[0] + v[0] * vs, sat[1] + v[1] * vs, sat[2] + v[2] * vs]);
+    ctx.strokeStyle = c.hot; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(vx, vy); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = c.muted; ctx.fillText("drag to rotate · scroll to zoom · dashed: below the equator", 8, h - 8);
+  }
+
+  const mtrack = $("hv-track");
+  function drawTrack(c, now) {
+    const [ctx, w, h] = fit(mtrack);
+    ctx.clearRect(0, 0, w, h);
+    const X = (lon) => ((lon + 180) / 360) * w, Y = (lat) => ((90 - lat) / 180) * h;
+    ctx.strokeStyle = c.muted; ctx.lineWidth = 0.6;
+    for (let lon = -180; lon <= 180; lon += 30) { ctx.beginPath(); ctx.moveTo(X(lon), 0); ctx.lineTo(X(lon), h); ctx.stroke(); }
+    for (let lat = -60; lat <= 60; lat += 30) {
+      ctx.lineWidth = lat === 0 ? 1.2 : 0.6;
+      ctx.beginPath(); ctx.moveTo(0, Y(lat)); ctx.lineTo(w, Y(lat)); ctx.stroke();
+    }
+    if (land) {
+      ctx.fillStyle = c.accent; ctx.strokeStyle = c.fg; ctx.lineWidth = 0.7;
+      for (const r of land.rings) {
+        // Unwrap longitudes so rings crossing ±180° stay continuous; a ring
+        // that encircles a pole (Antarctica) is closed through that pole.
+        const pts = [];
+        let off = 0;
+        for (let k = 0; k < r.length; k += 2) {
+          if (k > 0) {
+            const d = r[k] - r[k - 2];
+            if (d > 180) off -= 360; else if (d < -180) off += 360;
+          }
+          pts.push([r[k] + off, r[k + 1]]);
+        }
+        if (Math.abs(pts[pts.length - 1][0] - pts[0][0]) > 180) {
+          const pole = pts.reduce((a, p) => a + p[1], 0) < 0 ? -90 : 90;
+          pts.push([pts[pts.length - 1][0], pole], [pts[0][0], pole]);
+        }
+        // Draw at three offsets; the canvas clips whatever falls outside.
+        for (const shift of [-360, 0, 360]) {
+          ctx.beginPath();
+          pts.forEach(([lo, la], k) => (k === 0 ? ctx.moveTo : ctx.lineTo).call(ctx, X(lo + shift), Y(la)));
+          ctx.closePath();
+          ctx.globalAlpha = 0.14; ctx.fill(); ctx.globalAlpha = 1; ctx.stroke();
+        }
+      }
+    }
+    // Ground track; highlighted where the satellite is above London's horizon.
+    ctx.lineWidth = 1.6;
+    for (let k = 1; k < track.length; k++) {
+      const [la0, lo0] = track[k - 1], [la1, lo1, el1] = track[k];
+      if (Math.abs(lo1 - lo0) > 180) continue;
+      ctx.strokeStyle = el1 > 0 ? c.hot : c.accent;
+      ctx.lineWidth = el1 > 0 ? 3 : 1.4;
+      ctx.beginPath(); ctx.moveTo(X(lo0), Y(la0)); ctx.lineTo(X(lo1), Y(la1)); ctx.stroke();
+    }
+    // Coverage circle: where the satellite is above the horizon.
+    const lat = now.lat * DEG, lon = now.lon * DEG;
+    const lam = Math.acos(R_EARTH / (R_EARTH + Math.max(now.alt, 1)));
+    ctx.strokeStyle = c.hot; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    let prev = null;
+    ctx.beginPath();
+    for (let k = 0; k <= 180; k++) {
+      const b = (2 * Math.PI * k) / 180;
+      const la = Math.asin(Math.sin(lat) * Math.cos(lam) + Math.cos(lat) * Math.sin(lam) * Math.cos(b));
+      const lo = lon + Math.atan2(Math.sin(b) * Math.sin(lam) * Math.cos(lat), Math.cos(lam) - Math.sin(lat) * Math.sin(la));
+      const x = X(((lo / DEG + 540) % 360) - 180), y = Y(la / DEG);
+      if (prev && Math.abs(x - prev) < w / 2) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      prev = x;
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    // London and the sub-satellite point.
+    ctx.fillStyle = c.fg; ctx.beginPath(); ctx.arc(X(-0.1276), Y(51.5072), 3.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = "12px sans-serif"; ctx.fillText("London", X(-0.1276) + 6, Y(51.5072) - 5);
+    ctx.fillStyle = c.hot; ctx.beginPath(); ctx.arc(X(now.lon), Y(now.lat), 5, 0, 2 * Math.PI); ctx.fill();
+  }
+
+  function fmtTime(s) {
+    const sign = s < 0 ? "−" : "+";
+    s = Math.abs(s);
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+    return `${sign}${h}h ${String(m).padStart(2, "0")}m ${String(sec).padStart(2, "0")}s`;
+  }
+
+  function frame(ts) {
+    const dt = lastFrame === null ? 0 : (ts - lastFrame) / 1000;
+    lastFrame = ts;
+    if (playing) {
+      t += dt * +$("hv-speed").value;
+      if (t > +$("hv-time").max) t = 0;
+      $("hv-time").value = t;
+    }
+    try {
+      const s = call("state", t);
+      const now = {
+        pos: s.slice(0, 3), vel: s.slice(3, 6), lat: s[6], lon: s[7], alt: s[8],
+        el: s[9], az: s[10], range: s[11], era: s[12], peri: s.slice(13, 16),
+        earth: call("earth_frame", t),
+      };
+      const c = colours();
+      drawOrbit(c, now);
+      drawTrack(c, now);
+      const speed = Math.hypot(...now.vel);
+      const visible = now.el > 0;
+      $("hv-readout").innerHTML =
+        `<b>${fmtTime(t)}</b> after epoch &nbsp;·&nbsp; period ${(info[0] / 60).toFixed(1)} min &nbsp;·&nbsp; ` +
+        `perigee ${info[1].toFixed(0)} km, apogee ${info[2].toFixed(0)} km<br>` +
+        `altitude <b>${now.alt.toFixed(1)} km</b> &nbsp;·&nbsp; speed ${speed.toFixed(3)} km/s &nbsp;·&nbsp; ` +
+        `sub-satellite ${now.lat.toFixed(2)}°, ${now.lon.toFixed(2)}° &nbsp;·&nbsp; ERA ${now.era.toFixed(2)}°<br>` +
+        `from London: elevation <b class="${visible ? "hv-up" : ""}">${now.el.toFixed(1)}°</b>, azimuth ${now.az.toFixed(1)}°, ` +
+        `range ${now.range.toFixed(0)} km — ${visible ? "<b class=\"hv-up\">above the horizon</b>" : "below the horizon"}`;
+    } catch (err) {
+      $("hv-status").textContent = err.message;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  setControls(presets.iss);
+  load();
+})();

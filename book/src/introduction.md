@@ -41,6 +41,10 @@ ephemerides and lunar orientation from SPICE kernels. See
 `heavenly-orbit` adds two-body propagation, orbital elements and sampled
 trajectories. See [Orbits and trajectories](orbits.md).
 
+To see it running, try the [Playground](playground.md): the library
+compiled to WebAssembly, computing orbits, ground tracks and visibility in
+your browser.
+
 See the [roadmap](roadmap.md) for what comes next, and the
 [design proposal](design.md) for the full rationale.
 

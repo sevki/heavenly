@@ -146,9 +146,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
           tool: mdbook
+      - name: Build the playground's WebAssembly module
+        run: book/build-playground.sh
+      - name: The module must not need JavaScript imports
+        run: node -e "const m=new WebAssembly.Module(require('fs').readFileSync('book/src/playground/heavenly_viz.wasm'));if(WebAssembly.Module.imports(m).length)throw new Error(JSON.stringify(WebAssembly.Module.imports(m)))"
       - run: mdbook build book
       - uses: actions/upload-artifact@v4
         with:
