@@ -1,5 +1,7 @@
 //! Ellipsoids, geodetic coordinates and body orientation for `heavenly`.
 //!
+//! [Book](https://sevki.github.io/heavenly/) · [Playground](https://sevki.github.io/heavenly/playground.html) · [API docs](https://sevki.github.io/heavenly/api/heavenly_geo/)
+//!
 //! * [`Ellipsoid`] and [`Geodetic`]: latitude/longitude/height ↔ body-fixed
 //!   Cartesian, plus local east-north-up frames for facilities.
 //! * [`earth`]: ITRF ↔ GCRF (IAU 2006 precession, truncated IAU 2000B

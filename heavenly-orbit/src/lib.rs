@@ -1,6 +1,8 @@
 //! Orbital motion for `heavenly`: things whose position comes from a
 //! trajectory rather than a fixed point.
 //!
+//! [Book](https://sevki.github.io/heavenly/) · [Playground](https://sevki.github.io/heavenly/playground.html) · [API docs](https://sevki.github.io/heavenly/api/heavenly_orbit/)
+//!
 //! * [`kepler::propagate`]: universal-variable two-body propagation for
 //!   elliptic, parabolic and hyperbolic orbits.
 //! * [`ConicElements`]: orbital elements ↔ state vectors (SPICE conventions).

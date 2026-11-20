@@ -5,6 +5,8 @@ description = "Stable location identities, aliases and a frame-building registry
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://sevki.github.io/heavenly/api/heavenly_id/"
 rust-version.workspace = true
 
 [features]

@@ -5,6 +5,8 @@ description = "Frames, epochs, state vectors and transforms for the heavenly coo
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation = "https://sevki.github.io/heavenly/api/heavenly_core/"
 rust-version.workspace = true
 
 [features]

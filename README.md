@@ -4,6 +4,8 @@
 
 # heavenly
 
+**[Book](https://sevki.github.io/heavenly/)** · **[Playground](https://sevki.github.io/heavenly/playground.html)** (the library in your browser, as WebAssembly) · **[API docs](https://sevki.github.io/heavenly/api/heavenly_core/)** · [Changelog](CHANGELOG.md)
+
 A Rust library for describing, transforming and resolving physical locations
 across celestial bodies and moving reference frames — from a rack in London to
 a lunar base or a spacecraft in transit.
@@ -11,8 +13,8 @@ a lunar base or a spacecraft in transit.
 > **Identity is stable; position is time-dependent; reference frames provide
 > meaning; placement topology is policy.**
 
-* **Playground:** an interactive orbit and ground-track explorer in the book, running the library as WebAssembly.
-* **Book:** [`book/`](book/src/SUMMARY.md), built with mdbook (`mdbook serve book`). Published to GitHub Pages from `main`, with API docs under `/api/`.
+* **Playground:** an [interactive orbit and ground-track explorer](https://sevki.github.io/heavenly/playground.html), running the library as WebAssembly.
+* **Book:** [https://sevki.github.io/heavenly/](https://sevki.github.io/heavenly/), built from [`book/`](book/src/SUMMARY.md) with mdbook (`mdbook serve book`) and published from `main`, with [API docs](https://sevki.github.io/heavenly/api/heavenly_core/) under `/api/`.
 * **Design proposal:** [`docs/design.md`](docs/design.md).
 
 ## Status

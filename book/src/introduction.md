@@ -56,5 +56,5 @@ your browser.
 See the [roadmap](roadmap.md) for what comes next, and the
 [design proposal](design.md) for the full rationale.
 
-API reference: [`heavenly_core` on docs](./api/heavenly_core/index.html) (when
-built with the published site).
+API reference: [`heavenly_core`](./api/heavenly_core/index.html) and the other crates under
+[`/api/`](./api/heavenly_core/index.html), published with this book.
