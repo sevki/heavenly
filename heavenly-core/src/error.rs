@@ -38,6 +38,20 @@ pub enum Error {
     NonFinite,
     /// An input was outside its valid domain; the message names it.
     InvalidInput(&'static str),
+    /// A trajectory or ephemeris was asked for a state outside the time span
+    /// it covers.
+    OutsideCoverage {
+        epoch: Epoch,
+        start: Epoch,
+        end: Epoch,
+    },
+    /// A trajectory covers the span around `epoch` but has no data between
+    /// `before` and `after`, a gap longer than it is allowed to interpolate.
+    DataGap {
+        epoch: Epoch,
+        before: Epoch,
+        after: Epoch,
+    },
 }
 
 impl fmt::Display for Error {
@@ -69,6 +83,16 @@ impl fmt::Display for Error {
             Error::Parse(msg) => write!(f, "invalid epoch string: {msg}"),
             Error::NonFinite => f.write_str("non-finite numeric input"),
             Error::InvalidInput(what) => write!(f, "invalid input: {what}"),
+            Error::OutsideCoverage { epoch, start, end } => {
+                write!(f, "{epoch} is outside the data span {start} – {end}")
+            }
+            Error::DataGap {
+                epoch,
+                before,
+                after,
+            } => {
+                write!(f, "{epoch} falls in a data gap from {before} to {after}")
+            }
         }
     }
 }

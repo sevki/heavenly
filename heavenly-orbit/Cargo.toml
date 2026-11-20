@@ -1,0 +1,21 @@
+[package]
+name = "heavenly-orbit"
+version.workspace = true
+description = "Two-body propagation, orbital elements and sampled trajectories for heavenly"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["std"]
+std = ["alloc", "heavenly-core/std"]
+# Enables `SampledTrajectory`.
+alloc = ["heavenly-core/alloc"]
+
+[dependencies]
+heavenly-core = { version = "0.3.0", path = "../heavenly-core", default-features = false }
+libm = "0.2"
+
+[dev-dependencies]
+heavenly-geo = { path = "../heavenly-geo" }

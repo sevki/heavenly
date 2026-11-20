@@ -8,6 +8,7 @@
 //!   `moon_pa_de440_200625.bpc`.
 //! * [`frames`]: helpers that register body-centred ICRF frames and the
 //!   lunar `MOON_PA` / `MOON_ME` frames on a [`heavenly_core::FrameGraph`].
+//! * [`SpkLocator`]: a [`heavenly_core::Locator`] for any body in a kernel.
 //!
 //! Both little- and big-endian (`LTL-IEEE` / `BIG-IEEE`) files are read.
 //! Kernels are not bundled; download them from
@@ -48,10 +49,12 @@ extern crate alloc;
 mod daf;
 mod error;
 pub mod frames;
+mod locator;
 mod pck;
 mod rot;
 mod spk;
 
 pub use error::SpiceError;
+pub use locator::SpkLocator;
 pub use pck::{Pck, PckSegment};
 pub use spk::{Spk, SpkSegment, J2000};

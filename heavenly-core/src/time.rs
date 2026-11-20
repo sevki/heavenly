@@ -146,6 +146,23 @@ impl Epoch {
         self.tt_seconds_since_j2000() + tdb_minus_tt_seconds(self.tt_ns)
     }
 
+    /// TDB − TT at this instant, in seconds (|value| < 1.7 ms).
+    ///
+    /// Use this with [`Epoch::seconds_since`] to form a precise TDB
+    /// interval: `b.seconds_since(a) + b.tdb_minus_tt_seconds() −
+    /// a.tdb_minus_tt_seconds()`. Subtracting two
+    /// [`Epoch::tdb_seconds_since_j2000`] values instead loses ~0.1 µs to
+    /// f64 rounding at present-day epochs.
+    pub fn tdb_minus_tt_seconds(self) -> f64 {
+        tdb_minus_tt_seconds(self.tt_ns)
+    }
+
+    /// TDB seconds elapsed from `earlier` to `self`, computed without the
+    /// rounding of subtracting two large values.
+    pub fn tdb_seconds_since(self, earlier: Epoch) -> f64 {
+        self.seconds_since(earlier) + (self.tdb_minus_tt_seconds() - earlier.tdb_minus_tt_seconds())
+    }
+
     /// Builds an epoch from a calendar date in the given scale.
     pub fn from_calendar(c: Calendar) -> Result<Epoch, Error> {
         if !(1..=12).contains(&c.month)

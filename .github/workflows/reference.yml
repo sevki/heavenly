@@ -9,6 +9,7 @@ on:
       - "heavenly-geo/tests/reference/**"
       - "heavenly-spice/tests/reference/**"
       - "heavenly-spice/tests/data/**"
+      - "heavenly-orbit/tests/reference/**"
       - ".github/workflows/reference.yml"
   schedule:
     - cron: "17 4 * * 1"
@@ -33,4 +34,5 @@ jobs:
           curl -fsSL -o kernels/moon_de440_250416.tf https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf
       - run: python3 heavenly-geo/tests/reference/generate.py kernels > heavenly-geo/tests/reference/data.rs
       - run: python3 heavenly-spice/tests/reference/generate.py kernels > heavenly-spice/tests/reference/data.rs
-      - run: git diff --exit-code -- heavenly-geo/tests/reference heavenly-spice/tests
+      - run: python3 heavenly-orbit/tests/reference/generate.py > heavenly-orbit/tests/reference/data.rs
+      - run: git diff --exit-code -- heavenly-geo/tests/reference heavenly-spice/tests heavenly-orbit/tests/reference

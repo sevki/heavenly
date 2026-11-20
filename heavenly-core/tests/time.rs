@@ -194,3 +194,16 @@ fn tai_minus_utc() {
         Err(Error::UtcOutOfRange)
     );
 }
+
+#[test]
+fn precise_tdb_intervals() {
+    let a = p("2026-11-19T00:00:00Z");
+    let b = a.add_nanoseconds(1);
+    // One nanosecond of TT is one nanosecond of TDB to within 1e-17 s.
+    assert!((b.tdb_seconds_since(a) - 1e-9).abs() < 1e-17);
+    // Over half a year, TDB − TT changes by up to ~3.3 ms.
+    let c = a.add_seconds(182.6 * 86400.0).unwrap();
+    let d = c.tdb_seconds_since(a) - c.seconds_since(a);
+    assert!(d.abs() < 3.4e-3 && d.abs() > 1e-4, "{d}");
+    assert!(a.tdb_minus_tt_seconds().abs() < 1.7e-3);
+}
