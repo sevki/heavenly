@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use heavenly::geo::{earth, Ellipsoid, Geodetic};
-use heavenly::id::{Attitude, Entity, IdError, Kind, Mount, Registry};
+use heavenly::id::{Attitude, Entity, IdError, Kind, MemoryRegistry, Mount, Registry};
 use heavenly::orbit::{gm, ConicElements};
 use heavenly::*;
 
@@ -11,7 +11,7 @@ fn main() -> Result<(), IdError> {
     let epoch = Epoch::parse("2026-11-19T17:00:00Z")?;
 
     // ANCHOR: registry
-    let mut reg = Registry::new(Namespace(7))?;
+    let mut reg = MemoryRegistry::new(Namespace(7))?;
 
     // A data centre on the ground: site (ENU) → hall → rack.
     let site = reg.add(Entity::new(
@@ -98,8 +98,8 @@ fn main() -> Result<(), IdError> {
 
     let path: Vec<_> = reg
         .path(space_rack)?
-        .iter()
-        .map(|e| e.name.as_str())
+        .into_iter()
+        .map(|e| e.name.clone())
         .collect();
     println!("sat:example:42/module-2/rack-1 = {}", path.join(" / "));
     println!(

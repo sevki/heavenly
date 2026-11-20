@@ -80,7 +80,7 @@ impl fmt::Display for Error {
             }
             Error::UtcOutOfRange => f.write_str("UTC is only supported from 1972-01-01"),
             Error::InvalidCalendar => f.write_str("invalid calendar date or time"),
-            Error::Parse(msg) => write!(f, "invalid epoch string: {msg}"),
+            Error::Parse(msg) => write!(f, "parse error: {msg}"),
             Error::NonFinite => f.write_str("non-finite numeric input"),
             Error::InvalidInput(what) => write!(f, "invalid input: {what}"),
             Error::OutsideCoverage { epoch, start, end } => {

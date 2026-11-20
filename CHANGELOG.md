@@ -6,7 +6,27 @@ within a milestone. Before 1.0, a minor bump may break the API.
 
 ## Unreleased
 
+### Changed
+- **`heavenly::id::Registry` is now a trait.** Implement its four lookup
+  methods (`namespace`, `entity`, `lookup_alias`, `for_each_entity`) over
+  any store, such as a database or an inventory service. Resolving, frames,
+  paths, validation, frame-graph registration and locators are provided
+  methods, identical for every store. A store reports its own failures
+  through an associated `Error` type.
+  - The in-memory struct is now `MemoryRegistry`, and keeps the write
+    operations.
+  - `children` returns owned entities and `path` returns `Cow`s.
+  - `validate` now also detects frame-code collisions, which matters for
+    stores that don't check on insert.
+  - `entity_frame(namespace, id)` is public.
+
 ### Added
+- `heavenly::geo::eop::EopTable`: IERS Earth orientation parameters from
+  `finals2000A` (including predictions, Bulletin B values where available) or
+  EOP 20 C04 files. It interpolates with four-point Lagrange polynomials on
+  UT1 − TAI, so leap seconds are handled exactly, never extrapolates, and
+  implements `EopProvider`, so it plugs into `earth::register`. It is checked
+  against astropy's IERS readers. Works without std (it needs `alloc`).
 - CI: WebAssembly. A `wasm32-unknown-unknown` job builds `heavenly` without
   std, with alloc and with std, plus every crate's tests and examples. A
   `wasm-pack` job runs a portable conformance suite (`heavenly/tests/

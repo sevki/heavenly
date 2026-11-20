@@ -54,7 +54,7 @@ module behind a cargo feature, all on by default:
 | Module | What it does | Book |
 |--------|--------------|------|
 | crate root | epochs (UTC with leap seconds, TAI, TT, TDB), frames, transforms, frame graph, locators | [Concepts](https://sevki.github.io/heavenly/concepts.html) |
-| `heavenly::geo` | ellipsoids, geodetic coordinates, ENU site frames, Earth orientation (ITRF ↔ GCRF), IAU Moon/Mars models | [Earth, Moon and Mars](https://sevki.github.io/heavenly/earth-and-moon.html) |
+| `heavenly::geo` | ellipsoids, geodetic coordinates, ENU site frames, Earth orientation (ITRF ↔ GCRF) with IERS EOP tables, IAU Moon/Mars models | [Earth, Moon and Mars](https://sevki.github.io/heavenly/earth-and-moon.html) |
 | `heavenly::spice` | dependency-free reader for JPL SPK / binary PCK kernels (DE440, lunar orientation) | [Ephemerides](https://sevki.github.io/heavenly/spice.html) |
 | `heavenly::orbit` | two-body propagation, orbital elements, sampled trajectories with explicit coverage and gap errors; TLEs and SGP4/SDP4 | [Orbits](https://sevki.github.io/heavenly/orbits.html), [SGP4](https://sevki.github.io/heavenly/sgp4.html) |
 | `heavenly::id` | stable identities, aliases, and a registry of facilities, racks and spacecraft with their own frames | [Identity](https://sevki.github.io/heavenly/identity.html) |

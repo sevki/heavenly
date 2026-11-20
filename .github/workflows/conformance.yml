@@ -8,6 +8,7 @@ name: Conformance
 #   * Vallado's SGP4 (via the `sgp4` package's C++ build): the official
 #     SGP4/SDP4 verification set in every gravity model and mode
 #   * Skyfield: TEME -> ITRF
+#   * astropy: IERS EOP (finals2000A, C04) reading and interpolation
 #
 # It regenerates every reference fixture from those libraries and fails if
 # the committed copies differ, then runs the conformance tests (including
@@ -38,13 +39,13 @@ jobs:
       HEAVENLY_KERNELS: ${{ github.workspace }}/kernels
       # Generated fixtures. Explicit paths: a wildcard pathspec such as
       # '*/tests/reference' must match a whole file path, so it matches nothing.
-      FIXTURES: heavenly-geo/tests/reference heavenly-spice/tests heavenly-orbit/tests/reference heavenly-query/tests/reference
+      FIXTURES: heavenly-geo/tests/reference heavenly-geo/tests/data heavenly-spice/tests heavenly-orbit/tests/reference heavenly-query/tests/reference
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install pyerfa==2.0.1.5 spiceypy==8.4.0 sgp4==2.27 skyfield==1.55 numpy
+      - run: pip install pyerfa==2.0.1.5 spiceypy==8.4.0 sgp4==2.27 skyfield==1.55 astropy==8.0.3 astropy-iers-data==0.2026.11.16.0.37.44 numpy
       - uses: actions/cache@v4
         with:
           path: kernels
@@ -63,6 +64,7 @@ jobs:
         run: |
           python3 heavenly-geo/tests/reference/generate.py kernels > heavenly-geo/tests/reference/data.rs
           python3 heavenly-geo/tests/reference/generate_teme.py > heavenly-geo/tests/reference/teme_data.rs
+          python3 heavenly-geo/tests/reference/generate_eop.py heavenly-geo/tests/data > heavenly-geo/tests/reference/eop_data.rs
           python3 heavenly-spice/tests/reference/generate.py kernels > heavenly-spice/tests/reference/data.rs
           python3 heavenly-orbit/tests/reference/generate.py > heavenly-orbit/tests/reference/data.rs
           python3 heavenly-orbit/tests/reference/generate_sgp4.py > heavenly-orbit/tests/reference/sgp4_data.rs
@@ -92,7 +94,7 @@ jobs:
         run: |
           set -o pipefail
           cargo test -p heavenly-geo -p heavenly-spice -p heavenly-orbit -p heavenly-query \
-            --test validation --test sgp4 -- --include-ignored --nocapture 2>&1 | tee conformance.log
+            --test validation --test sgp4 --test eop -- --include-ignored --nocapture 2>&1 | tee conformance.log
       - name: Summary
         if: always()
         run: |
