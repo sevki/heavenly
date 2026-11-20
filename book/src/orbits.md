@@ -1,12 +1,10 @@
 # Orbits and trajectories
 
-Facilities sit still in their frames. Spacecraft do not. `heavenly-orbit`
+Facilities sit still in their frames. Spacecraft do not. `heavenly::orbit`
 provides `Locator`s for objects whose position comes from a trajectory, and
-`heavenly-spice` adds one for bodies in an ephemeris.
+`heavenly::spice` adds one for bodies in an ephemeris.
 
-```toml
-heavenly-orbit = { git = "https://github.com/sevki/heavenly" }
-```
+This is the `heavenly::orbit` module of the `heavenly` crate (cargo feature `orbit`, on by default).
 
 | Locator | Crate | Source of the state |
 |---------|-------|---------------------|
@@ -18,7 +16,7 @@ heavenly-orbit = { git = "https://github.com/sevki/heavenly" }
 All of them answer the same question: *where is it, in frame X, at time T?*
 
 ```rust,ignore
-{{#include ../../heavenly-orbit/examples/spacecraft.rs:spacecraft}}
+{{#include ../../heavenly/examples/spacecraft.rs:spacecraft}}
 ```
 
 ## Two-body motion

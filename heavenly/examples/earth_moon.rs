@@ -5,9 +5,9 @@
 //! <https://naif.jpl.nasa.gov/pub/naif/generic_kernels/>.
 use std::sync::Arc;
 
-use heavenly_core::*;
-use heavenly_geo::{earth, Ellipsoid, Geodetic};
-use heavenly_spice::{frames, Pck, Spk};
+use heavenly::geo::{earth, Ellipsoid, Geodetic};
+use heavenly::spice::{frames, Pck, Spk};
+use heavenly::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let Ok(dir) = std::env::var("HEAVENLY_KERNELS") else {

@@ -36,5 +36,7 @@ The book's figures are drawn at build time by an mdbook preprocessor,
 A chapter writes `\{{#heavenly-diagram conics}}`, and the preprocessor
 replaces it with an inline SVG computed by the heavenly crates. Nothing
 generated is committed, so figures cannot drift from the code. An unknown
-name fails the build. `cargo run -p heavenly-diagrams -- list` shows the
+name fails the build. (`book/heavenly-preprocessor.sh` answers mdbook's `supports` probe
+without compiling, because mdbook silently skips a preprocessor whose probe
+fails; CI also checks that no directive survives into the HTML.) `cargo run -p heavenly-diagrams -- list` shows the
 names, and `-- render <dir>` writes every figure to files for previewing.

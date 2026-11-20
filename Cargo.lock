@@ -3,8 +3,21 @@
 version = 3
 
 [[package]]
+name = "heavenly"
+version = "0.5.0"
+dependencies = [
+ "heavenly-core",
+ "heavenly-geo",
+ "heavenly-id",
+ "heavenly-orbit",
+ "heavenly-query",
+ "heavenly-spice",
+ "heavenly-topology",
+]
+
+[[package]]
 name = "heavenly-core"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "libm",
 ]
@@ -16,12 +29,13 @@ dependencies = [
  "heavenly-core",
  "heavenly-geo",
  "heavenly-orbit",
+ "heavenly-query",
  "serde_json",
 ]
 
 [[package]]
 name = "heavenly-geo"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "heavenly-core",
  "libm",
@@ -29,7 +43,7 @@ dependencies = [
 
 [[package]]
 name = "heavenly-id"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "heavenly-core",
  "heavenly-geo",
@@ -39,20 +53,36 @@ dependencies = [
 
 [[package]]
 name = "heavenly-orbit"
-version = "0.4.0"
+version = "0.5.0"
+dependencies = [
+ "heavenly-core",
+ "libm",
+]
+
+[[package]]
+name = "heavenly-query"
+version = "0.5.0"
 dependencies = [
  "heavenly-core",
  "heavenly-geo",
+ "heavenly-orbit",
+ "heavenly-spice",
  "libm",
 ]
 
 [[package]]
 name = "heavenly-spice"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "heavenly-core",
- "heavenly-geo",
  "libm",
+]
+
+[[package]]
+name = "heavenly-topology"
+version = "0.5.0"
+dependencies = [
+ "heavenly-core",
 ]
 
 [[package]]

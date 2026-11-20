@@ -9,9 +9,9 @@ src = "src"
 create-missing = false
 
 # Draws the diagrams ({{#heavenly-diagram NAME}}) with the heavenly crates at
-# build time; see diagrams/src/main.rs.
+# build time; see diagrams/src/main.rs and heavenly-preprocessor.sh.
 [preprocessor.heavenly]
-command = "cargo run --quiet --locked -p heavenly-diagrams --"
+command = "sh heavenly-preprocessor.sh"
 
 [output.html]
 additional-css = ["theme/heavenly.css"]

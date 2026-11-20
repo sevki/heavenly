@@ -13,7 +13,7 @@ value is read in or written out.
 | TDB | `TDB ≈ TT + 1.657 ms·sin g + 13.85 µs·sin 2g` | ≈ 30 µs; use an ephemeris for better |
 
 ```rust,ignore
-{{#include ../../heavenly-core/examples/time_scales.rs:scales}}
+{{#include ../../heavenly/examples/time_scales.rs:scales}}
 ```
 
 <figure class="hv-figure">

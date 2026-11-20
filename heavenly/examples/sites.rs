@@ -1,6 +1,6 @@
 //! Facilities on the Earth and the Moon, resolved into inertial frames.
-use heavenly_core::*;
-use heavenly_geo::{earth, iau, Ellipsoid, Geodetic};
+use heavenly::geo::{earth, iau, Ellipsoid, Geodetic};
+use heavenly::*;
 
 fn main() -> Result<(), Error> {
     // ANCHOR: sites

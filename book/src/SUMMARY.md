@@ -14,6 +14,8 @@
 - [Ephemerides (SPICE)](spice.md)
 - [Orbits and trajectories](orbits.md)
 - [Identity and local frames](identity.md)
+- [Signals and visibility](signals.md)
+- [Placement topology](topology.md)
 - [Playground](playground.md)
 - [`no_std` and features](no-std.md)
 

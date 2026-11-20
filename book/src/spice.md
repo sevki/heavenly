@@ -1,12 +1,10 @@
 # Ephemerides (SPICE)
 
-`heavenly-spice` reads NAIF SPICE kernels, the format JPL uses to publish
+`heavenly::spice` reads NAIF SPICE kernels, the format JPL uses to publish
 planetary and lunar ephemerides, and connects them to the frame graph. It
 has no dependencies beyond `libm` and works without `std` (it needs `alloc`).
 
-```toml
-heavenly-spice = { git = "https://github.com/sevki/heavenly" }
-```
+This is the `heavenly::spice` module of the `heavenly` crate (cargo feature `spice`, on by default).
 
 Kernels are not bundled. Download them from
 <https://naif.jpl.nasa.gov/pub/naif/generic_kernels/>. For example:
@@ -18,11 +16,11 @@ Kernels are not bundled. Download them from
 
 ## Putting it together
 
-With `heavenly-geo` for Earth orientation, a rack in London and a lander at
+With `heavenly::geo` for Earth orientation, a rack in London and a lander at
 the lunar south pole can be compared directly:
 
 ```rust,ignore
-{{#include ../../heavenly-spice/examples/earth_moon.rs:earth_moon}}
+{{#include ../../heavenly/examples/earth_moon.rs:earth_moon}}
 ```
 
 The frame graph this builds is:
@@ -89,4 +87,4 @@ Two kinds of test run in CI:
   big-endian copy. It also records SPICE's answers. These run on every build.
 * **Real DE440.** The `kernels` CI job downloads `de440s.bsp` and the lunar
   PCK and runs the ignored tests and the example. To run them locally:
-  `HEAVENLY_KERNELS=<dir> cargo test -p heavenly-spice -- --ignored`.
+  `HEAVENLY_KERNELS=<dir> cargo test -p heavenly-spice -p heavenly-query -- --ignored`.

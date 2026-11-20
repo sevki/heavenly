@@ -31,7 +31,7 @@ use svg::{Svg, ACCENT, ACCENT2, FG, MUTED};
 
 type Figure = (&'static str, fn() -> String);
 
-const FIGURES: [Figure; 11] = [
+const FIGURES: [Figure; 14] = [
     ("crates", crates),
     ("frame-graph", frame_graph),
     ("transform", transform),
@@ -43,6 +43,9 @@ const FIGURES: [Figure; 11] = [
     ("daf", daf),
     ("earth-orientation", earth_orientation),
     ("registry", registry),
+    ("light-time", light_time_figure),
+    ("visibility", visibility),
+    ("topology", topology),
 ];
 
 const DIRECTIVE: &str = "{{#heavenly-diagram ";
@@ -192,60 +195,52 @@ fn edge(c: (f64, f64), (hw, hh): (f64, f64), to: (f64, f64)) -> (f64, f64) {
 }
 
 fn crates() -> String {
-    let mut s = Svg::new("crates", 680.0, 300.0);
-    s.text(
-        (340.0, 24.0),
-        "your application: facilities, spacecraft, schedulers",
-        "middle",
-        MUTED,
-        12.0,
-    );
-    let core = node(
+    let mut s = Svg::new("crates", 680.0, 330.0);
+    s.text((340.0, 20.0), "your application", "middle", MUTED, 12.0);
+    let top = node(
         &mut s,
-        (340.0, 250.0),
-        340.0,
-        "heavenly-core",
-        Some("Epoch · FrameId · Transform · FrameGraph · Locator"),
+        (340.0, 62.0),
+        330.0,
+        "heavenly",
+        Some("heavenly = { git = \"https://github.com/sevki/heavenly\" }"),
         ACCENT,
     );
-    let geo = node(
-        &mut s,
-        (115.0, 140.0),
-        214.0,
-        "heavenly-geo",
-        Some("ellipsoids · Earth/Moon/Mars orientation"),
-        FG,
-    );
-    let spice = node(
-        &mut s,
-        (340.0, 140.0),
-        214.0,
-        "heavenly-spice",
-        Some("SPK/PCK kernels · ephemerides"),
-        FG,
-    );
-    let orbit = node(
-        &mut s,
-        (565.0, 140.0),
-        214.0,
-        "heavenly-orbit",
-        Some("two-body · elements · trajectories"),
-        FG,
-    );
-    for c in [geo, spice, orbit] {
-        let a = edge(c, (107.0, 21.0), core);
-        let b = edge(core, (170.0, 21.0), c);
-        s.arrow(a, b, FG);
-        s.arrow((c.0, 44.0), (c.0, c.1 - 23.0), MUTED);
+    s.arrow((340.0, 28.0), (340.0, 39.0), MUTED);
+    let modules = [
+        ("::geo", "geodesy, Earth"),
+        ("::spice", "ephemerides"),
+        ("::orbit", "orbits"),
+        ("::id", "identity"),
+        ("::query", "visibility"),
+        ("::topology", "failure domains"),
+    ];
+    let mut centres = Vec::new();
+    for (i, (name, sub)) in modules.iter().enumerate() {
+        let x = 60.0 + 112.0 * i as f64;
+        centres.push(node(&mut s, (x, 165.0), 106.0, name, Some(sub), FG));
     }
-    s.text(
-        (340.0, 290.0),
-        "arrows point from a crate to what it depends on; all are no_std",
-        "middle",
-        MUTED,
-        11.0,
+    let core = node(
+        &mut s,
+        (340.0, 268.0),
+        420.0,
+        "core (crate root)",
+        Some("Epoch · FrameId · Transform · StateVector · FrameGraph · Locator"),
+        ACCENT2,
     );
-    s.finish("Crate architecture")
+    for c in &centres {
+        s.arrow(
+            edge(top, (165.0, 21.0), *c),
+            edge(*c, (53.0, 21.0), top),
+            MUTED,
+        );
+        s.arrow(
+            edge(*c, (53.0, 21.0), core),
+            edge(core, (210.0, 21.0), *c),
+            FG,
+        );
+    }
+    s.text((340.0, 318.0), "each module is a cargo feature (all on by default); arrows point to what a part depends on; everything is no_std", "middle", MUTED, 11.0);
+    s.finish("The heavenly crate and its modules")
 }
 
 fn frame_graph() -> String {
@@ -1281,6 +1276,234 @@ fn registry() -> String {
     }
     s.text((20.0, 462.0), "rename / repoint changes only the left column; register_frames() adds one frame-graph edge per entity", "start", MUTED, 11.0);
     s.finish("Aliases, identities and entity frames in a Registry")
+}
+
+fn light_time_figure() -> String {
+    let mut s = Svg::new("lighttime", 680.0, 300.0);
+    // Observer fixed at t; target moving along a path.
+    let obs = (90.0, 230.0);
+    s.circle(obs, 6.0, FG, true);
+    s.text((obs.0, obs.1 + 22.0), "observer at t", "middle", FG, 12.0);
+    let path: Vec<_> = (0..=40)
+        .map(|k| {
+            let x = 330.0 + 8.0 * k as f64;
+            (x, 70.0 + 0.0009 * (x - 330.0).powi(2))
+        })
+        .collect();
+    s.polyline(&path, MUTED, true, 1.4);
+    s.text((640.0, 60.0), "target's path", "end", MUTED, 11.5);
+    let then = path[10];
+    let now = path[22];
+    let later = path[34];
+    s.circle(then, 5.5, ACCENT, true);
+    s.circle(now, 5.0, MUTED, false);
+    s.circle(later, 5.5, ACCENT2, true);
+    s.text(
+        (then.0 - 4.0, then.1 - 12.0),
+        "t − τ",
+        "middle",
+        ACCENT,
+        12.0,
+    );
+    s.text((now.0, now.1 - 12.0), "t", "middle", MUTED, 12.0);
+    s.text(
+        (later.0 + 4.0, later.1 - 12.0),
+        "t + τ",
+        "middle",
+        ACCENT2,
+        12.0,
+    );
+    s.arrow(then, (obs.0 + 6.0, obs.1 - 4.0), ACCENT);
+    s.text(
+        ((then.0 + obs.0) / 2.0 - 30.0, (then.1 + obs.1) / 2.0 - 8.0),
+        "Reception (CN): what arrives at t left at t − τ",
+        "middle",
+        ACCENT,
+        11.5,
+    );
+    s.arrow((obs.0 + 7.0, obs.1 + 1.0), later, ACCENT2);
+    s.text(
+        (
+            (later.0 + obs.0) / 2.0 + 40.0,
+            (later.1 + obs.1) / 2.0 + 26.0,
+        ),
+        "Transmission (XCN): sent at t, arrives at t + τ",
+        "middle",
+        ACCENT2,
+        11.5,
+    );
+    s.line(obs, now, MUTED, true);
+    s.text((20.0, 290.0), "τ = |r_target(t ∓ τ) − r_observer(t)| / c, iterated to 1 ps; distance at a common epoch (dashed) is not signal delay", "start", MUTED, 11.0);
+    s.finish("Light time on reception and on transmission")
+}
+
+fn visibility() -> String {
+    use heavenly_core::{FixedLocator, FrameGraph, Namespace};
+    use heavenly_geo::earth;
+    use heavenly_query::{find_windows, look_angles};
+    let mut s = Svg::new("visibility", 680.0, 330.0);
+    let start = Epoch::from_gregorian(TimeScale::Utc, 2026, 11, 20, 9, 0, 0, 0).unwrap();
+    let mut graph = FrameGraph::new();
+    earth::register(&mut graph, earth::EarthOrientation::ZERO).unwrap();
+    let site = FrameId::custom(Namespace(3), 1).unwrap();
+    let g = Geodetic::from_degrees(51.5072, -0.1276, 35.0).unwrap();
+    graph
+        .add_fixed(site, FrameId::ITRF, g.enu_to_body_fixed(&Ellipsoid::WGS84))
+        .unwrap();
+    let _ = FixedLocator {
+        frame: site,
+        position_m: Vec3::ZERO,
+    };
+    let sat = TwoBodyLocator {
+        frame: FrameId::GCRF,
+        elements: ConicElements {
+            periapsis_m: 6_798_137.0,
+            eccentricity: 0.0005,
+            inclination_rad: 51.64f64.to_radians(),
+            ascending_node_rad: 3.0,
+            argument_of_periapsis_rad: 0.0,
+            mean_anomaly_rad: 0.0,
+            epoch: Epoch::from_gregorian(TimeScale::Utc, 2026, 11, 19, 17, 0, 0, 0).unwrap(),
+            gm_m3_s2: heavenly_orbit::gm::EARTH,
+        },
+    };
+    let hours = 6.0;
+    let el = |t: Epoch| -> f64 {
+        look_angles::<_, _, heavenly_core::Error>(site, &sat, t, &graph)
+            .unwrap()
+            .elevation_rad
+            .to_degrees()
+    };
+    let p = Plot {
+        x0: 60.0,
+        y0: 30.0,
+        w: 590.0,
+        h: 230.0,
+        xr: (0.0, hours),
+        yr: (-90.0, 90.0),
+    };
+    let mask = 10.0;
+    let windows = find_windows::<heavenly_core::Error>(
+        start,
+        start.add_seconds(hours * 3600.0).unwrap(),
+        30.0,
+        1e-3,
+        |t| Ok(el(t) - mask),
+    )
+    .unwrap();
+    for w in &windows {
+        let a = p.map(w.start.seconds_since(start) / 3600.0, 90.0);
+        let b = p.map(w.end.seconds_since(start) / 3600.0, -90.0);
+        s.rect(
+            (a.0, a.1),
+            ((b.0 - a.0).max(2.0), b.1 - a.1),
+            ACCENT2,
+            Some(ACCENT2),
+            false,
+        );
+    }
+    let xt: Vec<_> = (0..=6)
+        .map(|h| (h as f64, format!("{:02}:00", 9 + h)))
+        .collect();
+    let yt: Vec<_> = [-90.0, -45.0, 0.0, 45.0, 90.0]
+        .iter()
+        .map(|v| (*v, format!("{v}°")))
+        .collect();
+    p.axes(
+        &mut s,
+        &xt,
+        &yt,
+        "UTC, 20 November 2026",
+        "elevation of an ISS-like orbit seen from London",
+    );
+    let pts: Vec<_> = (0..=2160)
+        .map(|k| {
+            let h = hours * k as f64 / 2160.0;
+            p.map(h, el(start.add_seconds(h * 3600.0).unwrap()))
+        })
+        .collect();
+    s.polyline(&pts, ACCENT, false, 1.6);
+    let (mx0, my) = p.map(0.0, mask);
+    let (mx1, _) = p.map(hours, mask);
+    s.line((mx0, my), (mx1, my), ACCENT2, true);
+    s.text((mx1, my - 6.0), "10° mask", "end", ACCENT2, 11.0);
+    s.text((20.0, 322.0), &format!("{} windows found by find_windows (30 s steps, bisected to 1 ms); computed by heavenly-query", windows.len()), "start", MUTED, 11.0);
+    s.finish("Visibility windows")
+}
+
+fn topology() -> String {
+    let mut s = Svg::new("topology", 680.0, 330.0);
+    s.text(
+        (20.0, 20.0),
+        "domains (policy) and their dependencies; locations are assigned to domains",
+        "start",
+        MUTED,
+        11.5,
+    );
+    let w = 150.0;
+    let grid = node(
+        &mut s,
+        (250.0, 70.0),
+        w,
+        "grid:uk-south",
+        Some("DomainKind::Power"),
+        ACCENT2,
+    );
+    let gb = node(
+        &mut s,
+        (80.0, 70.0),
+        120.0,
+        "law:gb",
+        Some("Jurisdiction"),
+        FG,
+    );
+    let ost = node(
+        &mut s,
+        (600.0, 70.0),
+        120.0,
+        "law:ost",
+        Some("Jurisdiction"),
+        FG,
+    );
+    let za = node(&mut s, (90.0, 170.0), w, "zone:lhr-a", Some("Zone"), FG);
+    let zb = node(&mut s, (250.0, 170.0), w, "zone:lhr-b", Some("Zone"), FG);
+    let net = node(
+        &mut s,
+        (420.0, 170.0),
+        w,
+        "net:ground-uk",
+        Some("Network"),
+        FG,
+    );
+    let con = node(
+        &mut s,
+        (590.0, 170.0),
+        w - 10.0,
+        "constellation",
+        Some("Constellation"),
+        FG,
+    );
+    let dep = |s: &mut Svg, a: (f64, f64), b: (f64, f64), hw: f64| {
+        s.arrow(edge(a, (hw, 21.0), b), edge(b, (hw, 21.0), a), FG);
+    };
+    dep(&mut s, za, grid, 75.0);
+    dep(&mut s, zb, grid, 75.0);
+    dep(&mut s, net, grid, 75.0);
+    dep(&mut s, con, net, 70.0);
+    dep(&mut s, za, gb, 60.0);
+    dep(&mut s, zb, gb, 60.0);
+    dep(&mut s, con, ost, 60.0);
+    let loc = |s: &mut Svg, at: (f64, f64), label: &str, dom: (f64, f64)| {
+        s.rect((at.0 - 70.0, at.1 - 13.0), (140.0, 26.0), MUTED, None, true);
+        s.text((at.0, at.1 + 4.0), label, "middle", ACCENT, 11.5);
+        s.line((at.0, at.1 - 13.0), (dom.0, dom.1 + 21.0), ACCENT, true);
+    };
+    loc(&mut s, (90.0, 260.0), "rack A (London)", za);
+    loc(&mut s, (250.0, 260.0), "rack B (London)", zb);
+    loc(&mut s, (590.0, 260.0), "sat-42 rack (orbit)", con);
+    s.text((20.0, 305.0), "arrows: depends on · dashed: assigned to · shared_failure_domains(rack A, sat-42) = { grid:uk-south }", "start", FG, 11.5);
+    s.text((20.0, 322.0), "7 000 km apart, one grid in common; blast_radius(\"grid:uk-south\") = { rack A, rack B, sat-42 }", "start", MUTED, 11.0);
+    s.finish("Failure domains and jurisdictions")
 }
 
 #[cfg(test)]

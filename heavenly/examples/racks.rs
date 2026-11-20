@@ -2,10 +2,10 @@
 //! on an orbiting satellite, resolved by alias and compared.
 use std::sync::Arc;
 
-use heavenly_core::*;
-use heavenly_geo::{earth, Ellipsoid, Geodetic};
-use heavenly_id::{Attitude, Entity, IdError, Kind, Mount, Registry};
-use heavenly_orbit::{gm, ConicElements};
+use heavenly::geo::{earth, Ellipsoid, Geodetic};
+use heavenly::id::{Attitude, Entity, IdError, Kind, Mount, Registry};
+use heavenly::orbit::{gm, ConicElements};
+use heavenly::*;
 
 fn main() -> Result<(), IdError> {
     let epoch = Epoch::parse("2026-11-19T17:00:00Z")?;

@@ -29,6 +29,10 @@ jobs:
         run: book/build-playground.sh
       - name: Build book
         run: mdbook build book
+      - name: Every diagram directive was expanded
+        # A skipped preprocessor leaves the directive alone on its line; the
+        # escaped example in the contributing guide is inside <code>.
+        run: "! grep -rlE '^[{][{]#heavenly-diagram' book/book --include='*.html'"
       - name: Build API docs into the book
         run: |
           cargo doc --workspace --no-deps --all-features
