@@ -64,12 +64,25 @@ jobs:
           python3 heavenly-orbit/tests/reference/generate.py > heavenly-orbit/tests/reference/data.rs
           python3 heavenly-orbit/tests/reference/generate_sgp4.py > heavenly-orbit/tests/reference/sgp4_data.rs
           python3 heavenly-query/tests/reference/generate.py kernels > heavenly-query/tests/reference/data.rs
-      # On x64 only: the fixtures are generated there, and the reference
-      # libraries' own last bits may differ on other CPUs. The Rust side is
-      # tested on both.
+      # The fixtures are generated on x64, and that is where they must match
+      # exactly. On arm64 the reference libraries are compiled differently
+      # (GCC, for one, fuses multiply-adds there), so their last digits move:
+      # report by how much, then restore the committed fixtures. heavenly
+      # itself is tested against the committed values on every architecture.
       - name: The committed fixtures match the reference libraries
         if: matrix.arch == 'x64'
         run: git diff --exit-code -- '*/tests/reference' heavenly-spice/tests/data
+      - name: How the reference libraries differ on this architecture
+        if: matrix.arch != 'x64'
+        run: |
+          {
+            echo "### Reference libraries on linux ${{ matrix.arch }} vs the committed (x64) fixtures"
+            echo '```'
+            git diff --stat -- '*/tests/reference' heavenly-spice/tests/data || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          git diff --stat -- '*/tests/reference' heavenly-spice/tests/data || true
+          git checkout -- '*/tests/reference' heavenly-spice/tests/data
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Conformance tests
