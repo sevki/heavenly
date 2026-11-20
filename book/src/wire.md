@@ -7,6 +7,9 @@ To send states between processes or store them compactly, enable the
 heavenly = { git = "https://github.com/sevki/heavenly", features = ["jetstream"] }
 ```
 
+The feature is on `main` and ships in the next release. The published
+0.5.0 crates predate it, so until then depend on Git as above.
+
 `heavenly::wire` then implements
 [jetstream](https://github.com/sevki/jetstream)'s `WireFormat` for the core
 types. Every value has a fixed size and a little-endian layout, so there are

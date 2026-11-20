@@ -8,7 +8,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! heavenly = { git = "https://github.com/sevki/heavenly" }
+//! heavenly = "0.5"
 //! ```
 //!
 //! The core types are at the crate root: [`Epoch`], [`FrameId`],

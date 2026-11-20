@@ -4,6 +4,8 @@
 
 # heavenly
 
+[![crates.io](https://img.shields.io/crates/v/heavenly.svg)](https://crates.io/crates/heavenly) [![docs.rs](https://img.shields.io/docsrs/heavenly)](https://docs.rs/heavenly)
+
 **[Book](https://sevki.github.io/heavenly/)** · **[Playground](https://sevki.github.io/heavenly/playground.html)** (the library in your browser, as WebAssembly) · **[API docs](https://sevki.github.io/heavenly/api/heavenly/)** · [Changelog](CHANGELOG.md)
 
 A Rust library for describing, transforming and resolving physical locations
@@ -15,7 +17,7 @@ a lunar base or a spacecraft in transit.
 
 ```toml
 [dependencies]
-heavenly = { git = "https://github.com/sevki/heavenly" }
+heavenly = "0.5"
 ```
 
 ```rust
