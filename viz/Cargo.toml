@@ -14,3 +14,4 @@ crate-type = ["cdylib", "rlib"]
 heavenly-core = { path = "../heavenly-core" }
 heavenly-geo = { path = "../heavenly-geo" }
 heavenly-orbit = { path = "../heavenly-orbit" }
+heavenly-query = { path = "../heavenly-query" }

@@ -1,7 +1,9 @@
 # `no_std` and features
 
-The `heavenly` crate is `no_std` with default features off. Its only
-external dependency is [`libm`](https://crates.io/crates/libm). Enable just
+The `heavenly` crate is `no_std` with default features off. With default
+features off, its only external dependency is
+[`libm`](https://crates.io/crates/libm). The default `simd` feature adds
+[`wide`](https://crates.io/crates/wide), which is also `no_std`. Enable just
 the modules you need:
 
 ```toml
@@ -18,6 +20,7 @@ heavenly = { version = "0.6", default-features = false, features = ["geo", "orbi
 | `spice` | yes | `heavenly::spice`; kernels are held in memory | yes |
 | `id` | yes | `heavenly::id` (implies `geo`) | yes |
 | `topology` | yes | `heavenly::topology` | yes |
+| `simd` | yes | SIMD for the batch operations, through [`wide`](https://crates.io/crates/wide). Results are bit-identical without it | no |
 | `jetstream` | **no** | `heavenly::wire`: compact binary encoding ([Wire format](wire.md)) | yes (std) |
 
 Without `std`, `heavenly::spice` still reads kernels: load the bytes

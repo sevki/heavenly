@@ -51,4 +51,13 @@
 .hv-readout { font-size: 0.85em; line-height: 1.6; margin-top: 6px; font-variant-numeric: tabular-nums; }
 .hv-readout .hv-up { color: #e8590c; }
 .hv-status { font-size: 0.85em; color: var(--icons); }
+.hv-tle { margin: 4px 0 8px; font-size: 0.9em; }
+.hv-tle-mode .hv-controls label:not(:last-child) { opacity: 0.4; }
+.hv-tle textarea { width: 100%; font-family: var(--mono-font, monospace); font-size: 0.85em; box-sizing: border-box; background: var(--bg); color: var(--fg); }
+.hv-note { color: var(--icons); font-size: 0.85em; margin-left: 6px; }
+.hv-passes { font-size: 0.85em; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.hv-passes table { border-collapse: collapse; width: 100%; }
+.hv-passes td, .hv-passes th { padding: 2px 6px; text-align: left; }
+.hv-passes tr.hv-vis td { color: #e8590c; }
+.hv-passes tr { cursor: pointer; }
 .hv-play:not(.hv-ready) .hv-canvases { opacity: 0.4; }

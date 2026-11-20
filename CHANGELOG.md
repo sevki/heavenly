@@ -6,6 +6,55 @@ within a milestone. Before 1.0, a minor bump may break the API.
 
 ## Unreleased
 
+### Added
+- Sunlight and eclipses in `heavenly::query`:
+  - `AnalyticSun`, a kernel-free Sun `Locator`, good to 32″ against DE440
+    over 1950–2050;
+  - `Occulter::shadow` / `shadow_at`, returning a `Shadow` with its kind
+    (sunlit, penumbra, umbra, antumbra), the visible fraction of the solar
+    disk, and continuous margins for `find_windows`;
+  - `eclipses()`, which finds partial and total eclipse windows.
+
+  Eclipse edges match SPICE `gfoclt` (pck00011 ellipsoids, DE440) to
+  3–39 ms for LEO, GEO and HEO orbits. The new conformance generator is
+  `generate_shadow.py`.
+- Example `visible_passes`: ISS passes over London that are actually
+  visible (sunlit satellite, dark sky). It is cross-checked with Skyfield.
+- Playground:
+  - TLE input propagated with SGP4, plus an ISS TLE preset;
+  - the orbit and ground track are greyed where the satellite is in the
+    Earth's shadow;
+  - the night side is shaded, and the Sun is marked;
+  - the readout shows the satellite's sunlight and London's Sun elevation;
+  - a clickable list of passes over London marks which are visible.
+
+  All of it is computed by the library in WebAssembly.
+
+- **Batch operations with SIMD.** These give results bit-identical to the
+  single-item methods, on every platform, with or without SIMD:
+  - `Rotation::apply_batch`;
+  - `Transform::apply_positions` and `Transform::apply_batch`;
+  - `FrameTransform::apply_batch`;
+  - `StateVector::to_frame_batch`, which resolves one transform per run of
+    states sharing a frame and epoch.
+
+  The new default `simd` feature (via `wide` 0.7, `no_std`, MSRV 1.61)
+  processes position-and-velocity transforms four at a time with AVX,
+  SSE2, NEON or WebAssembly `simd128`. Each lane does the same IEEE
+  operations in the same order as the scalar code, with no fused
+  multiply-add. Measured on x86_64 (`cargo bench -p heavenly-core --bench
+  batch`), SIMD makes `Transform::apply_batch` 1.6× faster with SSE2 and
+  3.1× with AVX-512, and `to_frame_batch` 2.7× and 4.0×.
+  `to_frame_batch` is 14–56× faster than `to_frame` in a loop.
+
+  Rotation-only batches stay plain loops: the compiler already vectorises
+  them, and an explicit SIMD kernel measured no faster. Single-vector
+  operations are unchanged, because there isn't enough work in one 3-vector
+  operation for SIMD to pay.
+
+  CI checks parity with AVX2, NEON (arm64 runners) and `simd128`
+  (`wasm-pack`), and builds `simd` without std.
+
 ### Changed
 - **`heavenly::id::Registry` is now a trait.** Implement its four lookup
   methods (`namespace`, `entity`, `lookup_alias`, `for_each_entity`) over

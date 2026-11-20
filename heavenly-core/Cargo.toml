@@ -10,11 +10,15 @@ documentation = "https://sevki.github.io/heavenly/api/heavenly_core/"
 rust-version.workspace = true
 
 [features]
-default = ["std"]
+default = ["std", "simd"]
 # Enables `std::error::Error` impls. Implies `alloc`.
 std = ["alloc"]
 # Enables the heap-backed `FrameGraph` resolver.
 alloc = []
+# Vectorises the batch operations (`Rotation::apply_batch` and friends) with
+# `wide` (AVX/SSE2, NEON, WebAssembly simd128). Results are bit-identical
+# with or without it; without it the batch operations are plain loops.
+simd = ["dep:wide"]
 # Compact binary encoding via jetstream's `WireFormat` (see `wire`). Needs
 # std and a recent toolchain (jetstream's own MSRV, currently Rust 1.91),
 # and adds jetstream's dependencies, so it is off by default.
@@ -22,4 +26,10 @@ jetstream = ["std", "dep:jetstream_wireformat"]
 
 [dependencies]
 libm = "0.2"
+# 0.7: the 1.x line needs Rust 1.89, above this crate's MSRV.
+wide = { version = "0.7", default-features = false, optional = true }
 jetstream_wireformat = { version = "16.3.1", default-features = false, features = ["std"], optional = true }
+
+[[bench]]
+name = "batch"
+harness = false

@@ -17,6 +17,11 @@
   let path = [];
   let track = [];
   let info = [];
+  let passes = [];
+  let epochMs = 0; // the model epoch, as JS milliseconds (UTC)
+  const ISS_TLE =
+    "1 25544U 98067A   20194.88612269 -.00002218  00000-0 -31515-4 0  9992\n" +
+    "2 25544  51.6461 221.2784 0001413  89.1723 280.4612 15.49507896236008";
 
   // --- WebAssembly ----------------------------------------------------------
   function read(n) {
@@ -89,14 +94,60 @@
       if (isNaN(d)) throw new Error("invalid epoch");
       if (wasm.set_epoch(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()) !== 0) throw new Error(error());
       if (wasm.set_orbit(alt, e, i, raan, argp, 0) !== 0) throw new Error(error());
-      info = call("info");
-      path = chunk(call("orbit_path", 361), 3);
-      const span = Math.min(Math.max(3 * info[0], 3 * 3600), 2 * 86400);
-      $("hv-time").max = span;
-      track = chunk(call("ground_track", 0, span, 900), 3);
-      $("hv-status").textContent = "";
+      refresh(Math.min(Math.max(3 * call("info")[0], 3 * 3600), 2 * 86400));
+      root.classList.remove("hv-tle-mode");
     } catch (err) {
       $("hv-status").textContent = err.message;
+    }
+  }
+
+  // Loads a TLE into the model (SGP4). The epoch becomes the TLE's.
+  function applyTle(text) {
+    if (!wasm) return;
+    try {
+      const bytes = new TextEncoder().encode(text);
+      // Ask for the buffer first: it can grow memory, which replaces
+      // wasm.memory.buffer.
+      const at = wasm.input_ptr(bytes.length);
+      new Uint8Array(wasm.memory.buffer, at, bytes.length).set(bytes);
+      if (wasm.set_tle(bytes.length) !== 0) throw new Error(error());
+      t = 0;
+      refresh(2 * 86400);
+      // Show the TLE's epoch, and that the sliders are not in use.
+      $("hv-epoch").value = new Date(epochMs).toISOString().slice(0, 16);
+      root.classList.add("hv-tle-mode");
+      $("hv-status").textContent = "Propagating the TLE with SGP4. Move a slider or pick a preset to go back to two-body elements.";
+    } catch (err) {
+      $("hv-status").textContent = err.message;
+    }
+  }
+
+  // Everything below comes from the library; this only stores it for drawing.
+  function refresh(span) {
+    info = call("info");
+    const f = call("epoch_fields");
+    epochMs = Date.UTC(f[0], f[1] - 1, f[2], f[3], f[4], 0) + f[5] * 1000;
+    path = chunk(call("orbit_path", 361), 4);
+    $("hv-time").max = span;
+    track = chunk(call("ground_track", 0, span, 1200), 4);
+    passes = chunk(call("passes", 0, span), 4);
+    drawPasses();
+    $("hv-status").textContent = "";
+  }
+
+  function utc(ts) {
+    return new Date(epochMs + ts * 1000).toISOString().slice(0, 16).replace("T", " ");
+  }
+
+  function drawPasses() {
+    if (!passes.length) { $("hv-passes").innerHTML = "No passes above 10° over London in this span."; return; }
+    const rows = passes.map(([a, b, top, vis], k) =>
+      `<tr data-t="${a}" class="${vis > 0 ? "hv-vis" : ""}"><td>${utc(a)} UTC</td><td>${Math.round(b - a)} s</td>` +
+      `<td>${top.toFixed(0)}°</td><td>${vis > 0 ? "visible for " + Math.round(vis) + " s" : "not visible"}</td></tr>`).join("");
+    $("hv-passes").innerHTML =
+      `<table><tr><th>Passes over London above 10°</th><th>length</th><th>highest</th><th>sunlit in a dark sky</th></tr>${rows}</table>`;
+    for (const tr of $("hv-passes").querySelectorAll("tr[data-t]")) {
+      tr.addEventListener("click", () => { t = +tr.dataset.t; $("hv-time").value = t; });
     }
   }
 
@@ -109,6 +160,9 @@
   for (const id of ["hv-alt", "hv-e", "hv-i", "hv-raan", "hv-argp", "hv-epoch"]) {
     $(id).addEventListener("input", applyOrbit);
   }
+  $("hv-tle").value = ISS_TLE;
+  $("hv-preset-tle").addEventListener("click", () => { $("hv-tle").value = ISS_TLE; applyTle(ISS_TLE); });
+  $("hv-tle-btn").addEventListener("click", () => applyTle($("hv-tle").value));
   for (const [name, p] of Object.entries(presets)) {
     const b = $("hv-preset-" + name);
     if (b) b.addEventListener("click", () => { setControls(p); t = 0; applyOrbit(); });
@@ -216,6 +270,13 @@
     };
     axis([rmax * 1.05, 0, 0], "x (GCRF)");
     axis([0, 0, rmax * 0.9], "z");
+    // The Sun's direction.
+    {
+      const d = now.sun, r = rmax * 1.15;
+      const [x, y] = cam.p([d[0] * r, d[1] * r, d[2] * r]);
+      ctx.fillStyle = "#f2b705"; ctx.beginPath(); ctx.arc(x, y, 7, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = c.muted; ctx.font = "12px sans-serif"; ctx.fillText("Sun", x + 9, y + 4);
+    }
     // Orbit: hidden where it passes behind the Earth.
     ctx.lineWidth = 2; ctx.strokeStyle = c.accent;
     for (let k = 1; k < path.length; k++) {
@@ -225,6 +286,7 @@
       const [mx, my] = cam.p(mid);
       const hidden = Math.hypot(mx - ex, my - ey) < er && cam.depth(mid) < 0;
       const below = mid[2] < 0;
+      ctx.strokeStyle = b[3] < 0.5 ? c.muted : c.accent; // grey in the Earth's shadow
       ctx.globalAlpha = hidden ? 0.15 : 1;
       ctx.setLineDash(below ? [5, 4] : []);
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
@@ -233,7 +295,7 @@
     // Periapsis and the satellite.
     const [px, py] = cam.p(now.peri);
     ctx.fillStyle = c.fg; ctx.beginPath(); ctx.arc(px, py, 3, 0, 2 * Math.PI); ctx.fill();
-    ctx.font = "12px sans-serif"; ctx.fillText("periapsis", px + 6, py - 4);
+    ctx.font = "12px sans-serif"; ctx.fillText(root.classList.contains("hv-tle-mode") ? "lowest point" : "periapsis", px + 6, py - 4);
     const sat = now.pos;
     const [sx, sy] = cam.p(sat);
     const behind = Math.hypot(sx - ex, sy - ey) < er && cam.depth(sat) < 0;
@@ -243,7 +305,7 @@
     const [vx, vy] = cam.p([sat[0] + v[0] * vs, sat[1] + v[1] * vs, sat[2] + v[2] * vs]);
     ctx.strokeStyle = c.hot; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(vx, vy); ctx.stroke();
     ctx.globalAlpha = 1;
-    ctx.fillStyle = c.muted; ctx.fillText("drag to rotate · scroll to zoom · dashed: below the equator", 8, h - 8);
+    ctx.fillStyle = c.muted; ctx.fillText("drag to rotate · scroll to zoom · dashed: below the equator · grey: in the Earth's shadow", 8, h - 8);
   }
 
   const mtrack = $("hv-track");
@@ -284,15 +346,31 @@
         }
       }
     }
-    // Ground track; highlighted where the satellite is above London's horizon.
+    // Night side: the library's terminator runs west to east; close it
+    // through the pole that is in darkness.
+    {
+      const [sLat, sLon] = now.term.slice(0, 2);
+      const pts = chunk(now.term.slice(2), 2);
+      const pole = sLat > 0 ? -90 : 90;
+      ctx.beginPath();
+      ctx.moveTo(X(-180), Y(pts[0][0]));
+      for (const [la, lo] of pts) ctx.lineTo(X(lo), Y(la));
+      ctx.lineTo(X(180), Y(pts[pts.length - 1][0]));
+      ctx.lineTo(X(180), Y(pole)); ctx.lineTo(X(-180), Y(pole)); ctx.closePath();
+      ctx.fillStyle = "#000"; ctx.globalAlpha = 0.18; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = "#f2b705"; ctx.beginPath(); ctx.arc(X(sLon), Y(sLat), 6, 0, 2 * Math.PI); ctx.fill();
+    }
+    // Ground track: orange above London's horizon, grey in the Earth's shadow.
     ctx.lineWidth = 1.6;
     for (let k = 1; k < track.length; k++) {
-      const [la0, lo0] = track[k - 1], [la1, lo1, el1] = track[k];
+      const [la0, lo0] = track[k - 1], [la1, lo1, el1, lit1] = track[k];
       if (Math.abs(lo1 - lo0) > 180) continue;
-      ctx.strokeStyle = el1 > 0 ? c.hot : c.accent;
-      ctx.lineWidth = el1 > 0 ? 3 : 1.4;
+      ctx.strokeStyle = el1 > 0 ? c.hot : lit1 < 0.5 ? c.fg : c.accent;
+      ctx.lineWidth = el1 > 0 ? 3 : lit1 < 0.5 ? 2 : 1.4;
+      ctx.setLineDash(lit1 < 0.5 && el1 <= 0 ? [3, 3] : []);
       ctx.beginPath(); ctx.moveTo(X(lo0), Y(la0)); ctx.lineTo(X(lo1), Y(la1)); ctx.stroke();
     }
+    ctx.setLineDash([]);
     // Coverage circle: where the satellite is above the horizon.
     const lat = now.lat * DEG, lon = now.lon * DEG;
     const lam = Math.acos(R_EARTH / (R_EARTH + Math.max(now.alt, 1)));
@@ -334,7 +412,9 @@
       const now = {
         pos: s.slice(0, 3), vel: s.slice(3, 6), lat: s[6], lon: s[7], alt: s[8],
         el: s[9], az: s[10], range: s[11], era: s[12], peri: s.slice(13, 16),
+        lit: s[16], shadow: s[17], sunEl: s[18], sun: s.slice(21, 24),
         earth: call("earth_frame", t),
+        term: call("terminator", t, 181),
       };
       const c = colours();
       drawOrbit(c, now);
@@ -347,7 +427,10 @@
         `altitude <b>${now.alt.toFixed(1)} km</b> &nbsp;·&nbsp; speed ${speed.toFixed(3)} km/s &nbsp;·&nbsp; ` +
         `sub-satellite ${now.lat.toFixed(2)}°, ${now.lon.toFixed(2)}° &nbsp;·&nbsp; ERA ${now.era.toFixed(2)}°<br>` +
         `from London: elevation <b class="${visible ? "hv-up" : ""}">${now.el.toFixed(1)}°</b>, azimuth ${now.az.toFixed(1)}°, ` +
-        `range ${now.range.toFixed(0)} km — ${visible ? "<b class=\"hv-up\">above the horizon</b>" : "below the horizon"}`;
+        `range ${now.range.toFixed(0)} km — ${visible ? "<b class=\"hv-up\">above the horizon</b>" : "below the horizon"}<br>` +
+        `${utc(t)} UTC &nbsp;·&nbsp; satellite ${["in sunlight", "in the penumbra", "in the Earth's shadow", "in the antumbra"][now.shadow]}` +
+        `${now.shadow === 1 ? " (" + (100 * now.lit).toFixed(0) + "% of the Sun)" : ""} &nbsp;·&nbsp; ` +
+        `Sun at London ${now.sunEl.toFixed(1)}° (${now.sunEl > 0 ? "day" : now.sunEl > -6 ? "twilight" : "dark"})`;
     } catch (err) {
       $("hv-status").textContent = err.message;
     }
