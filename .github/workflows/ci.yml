@@ -35,7 +35,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - run: cargo clippy -p heavenly-core -p heavenly-geo -p heavenly-spice --no-default-features -- -D warnings
+      - run: cargo clippy -p heavenly-core -p heavenly-geo -p heavenly-spice -p heavenly-orbit --no-default-features -- -D warnings
 
   test:
     name: test (${{ matrix.os }})
@@ -49,7 +49,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --all-features
-      - run: cargo test -p heavenly-core -p heavenly-geo --no-default-features --features alloc
+      - run: cargo test -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --features alloc
 
   msrv:
     name: MSRV (1.70)
@@ -73,8 +73,8 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build -p heavenly-core -p heavenly-geo --no-default-features --target ${{ matrix.target }}
-      - run: cargo build -p heavenly-core -p heavenly-geo --no-default-features --features alloc --target ${{ matrix.target }}
+      - run: cargo build -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --target ${{ matrix.target }}
+      - run: cargo build -p heavenly-core -p heavenly-geo -p heavenly-orbit --no-default-features --features alloc --target ${{ matrix.target }}
       - run: cargo build -p heavenly-spice --no-default-features --target ${{ matrix.target }}
 
   examples:
@@ -130,14 +130,33 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --workspace --no-deps --all-features
 
+  diagrams:
+    name: diagrams up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo run -p heavenly-diagrams
+      - name: Committed SVGs must match the generator
+        run: git diff --exit-code -- book/src/diagrams
+
   book:
     name: mdbook
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
           tool: mdbook
+      - name: Build the playground's WebAssembly module
+        run: book/build-playground.sh
+      - name: The module must not need JavaScript imports
+        run: node -e "const m=new WebAssembly.Module(require('fs').readFileSync('book/src/playground/heavenly_viz.wasm'));if(WebAssembly.Module.imports(m).length)throw new Error(JSON.stringify(WebAssembly.Module.imports(m)))"
       - run: mdbook build book
       - uses: actions/upload-artifact@v4
         with:

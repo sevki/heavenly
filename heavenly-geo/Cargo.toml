@@ -1,6 +1,6 @@
 [package]
 name = "heavenly-geo"
-version = "0.1.0"
+version.workspace = true
 description = "Ellipsoids, geodetic coordinates and body orientation models for heavenly"
 edition.workspace = true
 license.workspace = true
@@ -14,5 +14,5 @@ std = ["alloc", "heavenly-core/std"]
 alloc = ["heavenly-core/alloc"]
 
 [dependencies]
-heavenly-core = { version = "0.1.0", path = "../heavenly-core", default-features = false }
+heavenly-core = { version = "0.3.0", path = "../heavenly-core", default-features = false }
 libm = "0.2"

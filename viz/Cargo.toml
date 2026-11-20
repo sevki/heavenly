@@ -1,0 +1,16 @@
+[package]
+name = "heavenly-viz"
+version = "0.0.0"
+description = "WebAssembly playground for the heavenly book"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+heavenly-core = { path = "../heavenly-core" }
+heavenly-geo = { path = "../heavenly-geo" }
+heavenly-orbit = { path = "../heavenly-orbit" }

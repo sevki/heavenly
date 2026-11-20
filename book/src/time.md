@@ -16,6 +16,11 @@ value is read in or written out.
 {{#include ../../heavenly-core/examples/time_scales.rs:scales}}
 ```
 
+<figure class="hv-figure">
+{{#include diagrams/time-scales.svg}}
+<figcaption>Computed by <code>Epoch</code>: leap seconds step TAI − UTC; TT is a fixed 32.184 s after TAI; TDB wobbles about TT by ±1.66 ms over a year.</figcaption>
+</figure>
+
 ## Parsing
 
 `Epoch::parse` accepts `YYYY-MM-DDTHH:MM:SS[.fffffffff]` followed by a

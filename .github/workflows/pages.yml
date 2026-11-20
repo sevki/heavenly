@@ -20,9 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
       - uses: taiki-e/install-action@v2
         with:
           tool: mdbook
+      - name: Build the playground's WebAssembly module
+        run: book/build-playground.sh
       - name: Build book
         run: mdbook build book
       - name: Build API docs into the book

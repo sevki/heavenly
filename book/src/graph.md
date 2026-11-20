@@ -20,16 +20,10 @@ Nodes are frames and edges are known transforms. Each edge is registered as
 *child → parent* and can be traversed in either direction. The resolver finds
 the shortest path and composes the transforms along it.
 
-```text
-SSB_ICRF
-├── GCRF
-│   ├── ITRF
-│   │   └── London site → building → room → rack
-│   └── satellite body → module → rack
-└── MOON_ICRF
-    └── MOON_PA
-        └── lunar facility
-```
+<figure class="hv-figure">
+{{#include diagrams/frame-graph.svg}}
+<figcaption>The frame graph from the Earth–Moon example. Each edge names the crate that supplies it; locators (dashed) attach objects to frames.</figcaption>
+</figure>
 
 Edges can be time-dependent closures, so an edge may be unavailable at some
 epochs. Failures are explicit:

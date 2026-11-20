@@ -12,6 +12,8 @@
 - [Frame graphs and locators](graph.md)
 - [Earth, Moon and Mars](earth-and-moon.md)
 - [Ephemerides (SPICE)](spice.md)
+- [Orbits and trajectories](orbits.md)
+- [Playground](playground.md)
 - [`no_std` and features](no-std.md)
 
 # Project

@@ -1,6 +1,6 @@
 [package]
 name = "heavenly-spice"
-version = "0.1.0"
+version.workspace = true
 description = "Reader for SPICE SPK and binary PCK kernels (JPL DE ephemerides) for heavenly"
 edition.workspace = true
 license.workspace = true
@@ -13,7 +13,7 @@ default = ["std"]
 std = ["heavenly-core/std"]
 
 [dependencies]
-heavenly-core = { version = "0.1.0", path = "../heavenly-core", default-features = false, features = ["alloc"] }
+heavenly-core = { version = "0.3.0", path = "../heavenly-core", default-features = false, features = ["alloc"] }
 libm = "0.2"
 
 [dev-dependencies]

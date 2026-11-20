@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 470" class="hv-diagram" role="img" aria-labelledby="hv-frames-title">
+<title id="hv-frames-title">Frame graph for the Earth–Moon example</title>
+<style>.hv-frames-sfg{stroke:currentColor;stroke-width:1.5}.hv-frames-sac{stroke:var(--links,#1f6feb);stroke-width:2}.hv-frames-sac2{stroke:#e8590c;stroke-width:2}.hv-frames-smu{stroke:var(--icons,#888);stroke-width:1}.hv-frames-ffg{fill:currentColor}.hv-frames-fac{fill:var(--links,#1f6feb)}.hv-frames-fac2{fill:#e8590c}.hv-frames-fmu{fill:var(--icons,#888)}.hv-frames-tfg{fill:currentColor}.hv-frames-tac{fill:var(--links,#1f6feb)}.hv-frames-tac2{fill:#e8590c}.hv-frames-tmu{fill:var(--icons,#888)}.hv-frames-bgfg{fill:var(--quote-bg,rgba(127,127,127,.12))}.hv-frames-bgac{fill:var(--quote-bg,rgba(127,127,127,.12))}.hv-frames-bgac2{fill:rgba(232,89,12,.12)}.hv-frames-bgmu{fill:rgba(127,127,127,.22)}.hv-frames-mono{font-family:var(--mono-font,monospace)}</style>
+<defs><marker id="hv-frames-arrow-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-frames-ffg"/></marker><marker id="hv-frames-arrow-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-frames-fac"/></marker><marker id="hv-frames-arrow-ac2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-frames-fac2"/></marker><marker id="hv-frames-arrow-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="hv-frames-fmu"/></marker></defs>
+<rect x="280.0" y="26.0" width="120.0" height="28.0" rx="6" class="hv-frames-sac hv-frames-bgac"/>
+<text x="340.0" y="44.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">SSB_ICRF</text>
+<rect x="110.0" y="116.0" width="120.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="170.0" y="134.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">GCRF</text>
+<rect x="450.0" y="116.0" width="120.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="510.0" y="134.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">MOON_ICRF</text>
+<rect x="30.0" y="216.0" width="120.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="90.0" y="234.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">ITRF</text>
+<rect x="230.0" y="216.0" width="140.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="300.0" y="234.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">spacecraft body</text>
+<rect x="380.0" y="216.0" width="120.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="440.0" y="234.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">MOON_PA</text>
+<rect x="540.0" y="216.0" width="120.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="600.0" y="234.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">MOON_IAU</text>
+<rect x="30.0" y="316.0" width="120.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="90.0" y="334.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">london (ENU)</text>
+<rect x="380.0" y="316.0" width="120.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="440.0" y="334.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">MOON_ME</text>
+<rect x="365.0" y="406.0" width="150.0" height="28.0" rx="6" class="hv-frames-sfg hv-frames-bgfg"/>
+<text x="440.0" y="424.5" text-anchor="middle" font-size="13" class="hv-frames-tfg hv-frames-mono">shackleton (ENU)</text>
+<line x1="196.4" y1="116.0" x2="313.6" y2="54.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="247.0" y="89.0" text-anchor="end" font-size="11" class="hv-frames-tac">spice: SPK</text>
+<line x1="483.6" y1="116.0" x2="366.4" y2="54.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="433.0" y="89.0" text-anchor="start" font-size="11" class="hv-frames-tac">spice: SPK</text>
+<line x1="101.2" y1="216.0" x2="158.8" y2="144.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="122.0" y="184.0" text-anchor="end" font-size="11" class="hv-frames-tac">geo: earth</text>
+<line x1="281.8" y1="216.0" x2="188.2" y2="144.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="243.0" y="184.0" text-anchor="start" font-size="11" class="hv-frames-tac">attitude (yours)</text>
+<line x1="449.8" y1="216.0" x2="500.2" y2="144.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="467.0" y="184.0" text-anchor="end" font-size="11" class="hv-frames-tac">spice: PCK</text>
+<line x1="587.4" y1="216.0" x2="522.6" y2="144.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="563.0" y="184.0" text-anchor="start" font-size="11" class="hv-frames-tac">geo: iau</text>
+<line x1="90.0" y1="316.0" x2="90.0" y2="244.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="82.0" y="284.0" text-anchor="end" font-size="11" class="hv-frames-tac">geo: ENU</text>
+<line x1="440.0" y1="316.0" x2="440.0" y2="244.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="448.0" y="284.0" text-anchor="start" font-size="11" class="hv-frames-tac">spice: FK</text>
+<line x1="440.0" y1="406.0" x2="440.0" y2="344.0" class="hv-frames-sfg" marker-end="url(#hv-frames-arrow-fg)"/>
+<text x="448.0" y="379.0" text-anchor="start" font-size="11" class="hv-frames-tac">geo: ENU</text>
+<rect x="15.0" y="398.0" width="150.0" height="24.0" rx="6" class="hv-frames-smu" fill="none" stroke-dasharray="5 4"/>
+<text x="90.0" y="414.0" text-anchor="middle" font-size="11.5" class="hv-frames-tac2">FixedLocator: rack</text>
+<line x1="90.0" y1="398.0" x2="90.0" y2="344.0" class="hv-frames-sac2" stroke-dasharray="5 4"/>
+<rect x="100.0" y="278.0" width="210.0" height="24.0" rx="6" class="hv-frames-smu" fill="none" stroke-dasharray="5 4"/>
+<text x="205.0" y="294.0" text-anchor="middle" font-size="11.5" class="hv-frames-tac2">TwoBodyLocator / SampledTrajectory</text>
+<line x1="202.4" y1="278.0" x2="173.1" y2="144.0" class="hv-frames-sac2" stroke-dasharray="5 4"/>
+<rect x="515.0" y="28.0" width="150.0" height="24.0" rx="6" class="hv-frames-smu" fill="none" stroke-dasharray="5 4"/>
+<text x="590.0" y="44.0" text-anchor="middle" font-size="11.5" class="hv-frames-tac2">SpkLocator: Mars</text>
+<line x1="515.0" y1="40.0" x2="400.0" y2="40.0" class="hv-frames-sac2" stroke-dasharray="5 4"/>
+<text x="10.0" y="462.0" text-anchor="start" font-size="11" class="hv-frames-tmu">boxes: frames · arrows: child → parent edges, labelled with the crate that supplies them</text>
+<text x="10.0" y="448.0" text-anchor="start" font-size="11" class="hv-frames-tac2">dashed: locators (objects), which resolve into any connected frame</text>
+</svg>

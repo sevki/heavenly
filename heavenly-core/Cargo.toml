@@ -1,6 +1,6 @@
 [package]
 name = "heavenly-core"
-version = "0.1.0"
+version.workspace = true
 description = "Frames, epochs, state vectors and transforms for the heavenly coordinate library"
 edition.workspace = true
 license.workspace = true

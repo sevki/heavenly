@@ -8,8 +8,9 @@ mod data;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use heavenly_core::Locator;
 use heavenly_core::{Epoch, FrameGraph, FrameId, FrameResolver, Rotation, Vec3};
-use heavenly_spice::{frames, Pck, SpiceError, Spk};
+use heavenly_spice::{frames, Pck, SpiceError, Spk, SpkLocator};
 
 fn data_file(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -203,4 +204,33 @@ fn de440_matches_spice() {
     // The prime-meridian angle reaches thousands of radians over the
     // kernel's span, where an f64 ulp is ~5e-13 rad: 1e-11 rad ≈ 17 µm.
     check_pck(&pck, data::DE440_MOON_PA, 1e-11);
+}
+
+#[test]
+fn spk_locator_at_multiple_epochs_and_outside_coverage() {
+    let spk = Arc::new(Spk::open(data_file("synthetic.bsp")).unwrap());
+    let mut graph = FrameGraph::new();
+    frames::register_ephemeris(&mut graph, Arc::clone(&spk), frames::STANDARD_BODIES).unwrap();
+    let moon = SpkLocator {
+        spk: Arc::clone(&spk),
+        body: frames::MOON,
+    };
+    for days in [-300.0, -1.5, 0.25, 33.0, 399.0] {
+        let epoch = et(days * 86400.0);
+        let s = moon.state_at(epoch, FrameId::GCRF, &graph).unwrap();
+        let (p, v) = spk.state(frames::MOON, frames::EARTH, epoch).unwrap();
+        assert_eq!(s.frame, FrameId::GCRF);
+        assert!(
+            (s.position_m - p).norm() < 1e-3 && (s.velocity_m_s - v).norm() < 1e-9,
+            "day {days}"
+        );
+    }
+    // Outside the kernel: the SPK's own coverage error, naming the body.
+    assert!(matches!(
+        moon.state_at(et(401.0 * 86400.0), FrameId::GCRF, &graph),
+        Err(SpiceError::NoCoverage { id: 301, .. })
+    ));
+    // A body the kernel does not contain.
+    let sun = SpkLocator { spk, body: 10 };
+    assert!(sun.state_at(Epoch::J2000, FrameId::GCRF, &graph).is_err());
 }
