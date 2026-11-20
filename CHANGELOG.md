@@ -4,7 +4,20 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
-## Unreleased
+## 0.7.0: M7, Earth orientation data, sunlight, batch operations and catalogues
+
+### Migrating from 0.6
+- **`heavenly::id`.** `Registry::new` is now `MemoryRegistry::new`. To
+  call `frame_of`, `resolve`, `register_frames`, `locate` and the other
+  lookups, bring the trait into scope: `use heavenly::id::Registry;`.
+- **Return types.** `children` now returns owned `Entity`s, and `path`
+  returns `Cow<Entity>`. Use `.into_iter()`, or `.name.clone()`, where
+  you held references before.
+- **SIMD.** The new `simd` feature is on by default, and adds `wide` as a
+  dependency. Results are bit-identical with or without it. To keep `libm`
+  as the only dependency, use `default-features = false`.
+- **Errors.** `Error::Parse` now displays as "parse error: …" instead of
+  "invalid epoch string: …".
 
 ### Added
 - `heavenly::orbit::Omm`: CCSDS Orbit Mean-Elements Messages carrying SGP4
@@ -35,23 +48,6 @@ within a milestone. Before 1.0, a minor bump may break the API.
   when a satellite is above 25°. All of it is computed per frame by the
   library.
 - Book chapter *Catalogues and constellations*.
-
-## 0.7.0: M7, Earth orientation data, sunlight and batch operations
-
-### Migrating from 0.6
-- **`heavenly::id`.** `Registry::new` is now `MemoryRegistry::new`. To
-  call `frame_of`, `resolve`, `register_frames`, `locate` and the other
-  lookups, bring the trait into scope: `use heavenly::id::Registry;`.
-- **Return types.** `children` now returns owned `Entity`s, and `path`
-  returns `Cow<Entity>`. Use `.into_iter()`, or `.name.clone()`, where
-  you held references before.
-- **SIMD.** The new `simd` feature is on by default, and adds `wide` as a
-  dependency. Results are bit-identical with or without it. To keep `libm`
-  as the only dependency, use `default-features = false`.
-- **Errors.** `Error::Parse` now displays as "parse error: …" instead of
-  "invalid epoch string: …".
-
-### Added
 - Sunlight and eclipses in `heavenly::query`:
   - `AnalyticSun`, a kernel-free Sun `Locator`, good to 32″ against DE440
     over 1950–2050;
