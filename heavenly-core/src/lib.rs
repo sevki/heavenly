@@ -52,6 +52,7 @@
 extern crate alloc;
 
 mod batch;
+pub mod covariance;
 mod error;
 mod frame;
 #[cfg(feature = "alloc")]
@@ -64,6 +65,7 @@ pub mod transform;
 #[cfg(feature = "jetstream")]
 pub mod wire;
 
+pub use covariance::{Covariance, Matrix6, UncertainState};
 pub use error::Error;
 pub use frame::{
     EarthFixed, Frame, FrameId, Gcrf, MarsFixed, MarsIcrf, MoonFixed, MoonIcrf, Namespace, SsbIcrf,

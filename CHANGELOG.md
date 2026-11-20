@@ -6,10 +6,32 @@ within a milestone. Before 1.0, a minor bump may break the API.
 
 ## Unreleased
 
-M9, perturbations. Everything is new API, except that `heavenly-query`
-now depends on `heavenly-orbit` for the analytic Sun.
+M9, perturbations, and M10, covariance and collision probability.
+Everything is new API, except that `heavenly-query` now depends on
+`heavenly-orbit` for the analytic Sun.
 
 ### Added
+- M10:
+  - `heavenly::Covariance`, a 6×6 position/velocity covariance checked
+    symmetric and positive semi-definite. It has `diagonal`, `transformed`
+    (`J C Jᵀ`), `plus`, `sigmas`, and `to_rtn`/`from_rtn` for the
+    radial–transverse–normal axes of conjunction data messages.
+  - `heavenly::UncertainState` (a state with its covariance). `to_frame`
+    moves the covariance through the transform's exact Jacobian; it
+    matches a finite-difference Jacobian of GCRF → ITRF.
+  - `heavenly::orbit::uncertainty`: `state_transition_matrix` (central
+    differences with Richardson extrapolation, for any propagator) and
+    `propagate_uncertain`; also `NumericalPropagator::propagate_uncertain`.
+    Checked for symplecticity (2e-7 over a day), against Clohessy–Wiltshire
+    (exact to the metre), and against Monte Carlo (0.5 %).
+  - `heavenly::query::collision_probability`: the short-encounter
+    probability of collision, from two uncertain states and a hard-body
+    radius. It also reports the encounter-plane σ and the miss in σ. It
+    matches the closed form (1e-10), an independent NumPy implementation
+    (1.9e-11 over 30 encounters) and 2 million Monte Carlo samples.
+  - Example `collision`: tracking covariances, screening, propagation to
+    the time of closest approach, the probability, and its dilution.
+  - Book: a *Covariance and collision probability* chapter.
 - `heavenly::orbit::NumericalPropagator`: integrates an orbit in GCRF under
   a `ForceModel`, with an adaptive Dormand–Prince 5(4) integrator that lands
   on each requested epoch. It has `propagate`, `for_each` (one pass through

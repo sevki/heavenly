@@ -9,6 +9,8 @@
 //! * [`look_angles`]: azimuth, elevation and range from a site.
 //! * [`Occulter`]: line of sight past an ellipsoidal body (Earth, Moon).
 //! * [`find_windows`]: rise/set intervals of any continuous condition.
+//! * [`collision_probability`]: the probability that two objects collide at
+//!   a close approach, from their states and covariances.
 //!
 //! Separation and relative velocity at a common epoch are on
 //! [`heavenly_core::StateVector`]. Distance at a common epoch is *not*
@@ -23,11 +25,13 @@ extern crate alloc;
 
 #[cfg(feature = "alloc")]
 pub mod catalog;
+mod collision;
 mod light_time;
 mod shadow;
 mod sun;
 mod visibility;
 
+pub use collision::{collision_probability, CollisionProbability};
 pub use light_time::{light_time, Direction, LightTime, SPEED_OF_LIGHT_M_S};
 #[cfg(feature = "alloc")]
 pub use shadow::{eclipses, Eclipses};

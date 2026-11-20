@@ -19,6 +19,7 @@
 - [Signals and visibility](signals.md)
 - [Sunlight and eclipses](sunlight.md)
 - [Catalogues and constellations](catalogs.md)
+- [Covariance and collision probability](collision.md)
 - [Placement topology](topology.md)
 - [Playground](playground.md)
 - [`no_std` and features](no-std.md)

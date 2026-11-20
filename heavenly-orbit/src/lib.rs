@@ -83,6 +83,7 @@ mod secular;
 pub mod sgp4;
 mod tle;
 mod two_body;
+pub mod uncertainty;
 
 #[cfg(feature = "alloc")]
 pub use catalog::{Catalog, CatalogEntry, Rejected};

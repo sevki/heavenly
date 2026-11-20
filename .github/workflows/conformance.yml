@@ -72,6 +72,7 @@ jobs:
           python3 heavenly-orbit/tests/reference/generate_numerical.py kernels > heavenly-orbit/tests/reference/numerical_data.rs
           python3 heavenly-query/tests/reference/generate.py kernels > heavenly-query/tests/reference/data.rs
           python3 heavenly-query/tests/reference/generate_shadow.py kernels > heavenly-query/tests/reference/shadow_data.rs
+          python3 heavenly-query/tests/reference/generate_collision.py > heavenly-query/tests/reference/collision_data.rs
       # The fixtures are generated on x64, and that is where they must match
       # exactly. On arm64 the reference libraries are compiled differently
       # (GCC, for one, fuses multiply-adds there), so their last digits move:
@@ -97,14 +98,14 @@ jobs:
         run: |
           set -o pipefail
           cargo test -p heavenly-geo -p heavenly-spice -p heavenly-orbit -p heavenly-query \
-            --test validation --test sgp4 --test eop --test shadow --test omm --test catalog --test numerical -- --include-ignored --nocapture 2>&1 | tee conformance.log
+            --test validation --test sgp4 --test eop --test shadow --test omm --test catalog --test numerical --test uncertainty --test collision -- --include-ignored --nocapture 2>&1 | tee conformance.log
       - name: Summary
         if: always()
         run: |
           {
             echo "### Worst differences against the reference implementations (linux ${{ matrix.arch }})"
             echo '```'
-            grep -E 'worst|states|eclipses' conformance.log || true
+            grep -E 'worst|states|eclipses|defect|Monte Carlo|Clohessy' conformance.log || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - run: cargo run -p heavenly --example earth_moon
