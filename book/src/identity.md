@@ -32,6 +32,35 @@ Running the example (`cargo run -p heavenly --example racks`) prints the
 current separation and relative speed. It also finds the closest approach
 over the next day: 441 km, on an overhead pass.
 
+## Your own store
+
+`Registry` is a trait, and `MemoryRegistry` is one implementation of it.
+Your entities probably already live somewhere: a database, a CMDB, an
+inventory service. Implement four lookups over that store:
+
+| Method | Returns |
+|--------|---------|
+| `namespace()` | the namespace of the entity frames |
+| `entity(id)` | the entity, borrowed or owned (`Cow`) |
+| `lookup_alias(alias)` | the ID an alias names |
+| `for_each_entity(f)` | every entity, one at a time |
+
+Everything else comes with the trait, so it behaves the same for every
+store:
+- resolving keys (`id_of`, `resolve`);
+- `frame_of`, `children` and `path`;
+- `validate`, which checks parents, cycles and frame-code collisions;
+- `register_frames`, `locator` and `locate`.
+
+A store reports its own failures through the associated `Error` type, which
+only has to convert from `IdError`. The trait's documentation has a complete
+example.
+
+Writes are not part of the trait. How a store adds, moves or renames
+entities (transactions, permissions, an audit trail) is its own business.
+`MemoryRegistry` has `add`, `remove`, `alias`, `repoint`, `rename` and
+`unalias`.
+
 ## Mounts
 
 Every entity says how its local frame attaches to its parent:

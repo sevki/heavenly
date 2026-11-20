@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use heavenly::geo::{earth, Ellipsoid, Geodetic};
-use heavenly::id::{Attitude, Entity, Kind, Mount, Registry};
+use heavenly::id::{Attitude, Entity, Kind, MemoryRegistry, Mount, Registry};
 use heavenly::orbit::{gm, ConicElements};
 use heavenly::query::{find_windows, light_time, look_angles, Direction};
 use heavenly::topology::{DomainKind, Topology};
@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ANCHOR: placement
     // Where things are: identities and frames (heavenly-id).
-    let mut reg = Registry::new(Namespace(7))?;
+    let mut reg = MemoryRegistry::new(Namespace(7))?;
     let lhr_a = reg.add(Entity::new(
         LocationId(1),
         Kind::Rack,

@@ -16,15 +16,21 @@
 //! [`Registry::register_frames`] turns the whole tree into frame-graph edges,
 //! so any rack, device or module can be located in any connected frame.
 //!
+//! [`Registry`] is a trait: implement its four lookup methods over wherever
+//! your entities live (a database, an inventory service), and the frames,
+//! paths, validation and locators come with it, identical for every store.
+//! [`MemoryRegistry`] is the in-memory implementation, with the write
+//! operations.
+//!
 //! # Example
 //!
 //! ```
 //! use heavenly_core::*;
 //! use heavenly_geo::{earth, Ellipsoid, Geodetic};
-//! use heavenly_id::{Entity, Kind, Mount, Registry};
+//! use heavenly_id::{Entity, Kind, MemoryRegistry, Mount, Registry};
 //!
 //! # fn main() -> Result<(), heavenly_id::IdError> {
-//! let mut reg = Registry::new(Namespace(7))?;
+//! let mut reg = MemoryRegistry::new(Namespace(7))?;
 //! let site = reg.add(Entity::new(
 //!     LocationId(1), Kind::Facility, "London LHR1",
 //!     Mount::Geodetic {
@@ -73,4 +79,4 @@ pub use alias::Alias;
 pub use error::IdError;
 pub use heavenly_core::LocationId;
 pub use mount::{Attitude, Mount, Parent, TrajectoryFn};
-pub use registry::{Entity, Key, Kind, Registry};
+pub use registry::{entity_frame, Entity, Key, Kind, MemoryRegistry, Registry};

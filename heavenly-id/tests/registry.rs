@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use heavenly_core::{Epoch, Error, FrameGraph, FrameId, Namespace, Rotation, Vec3};
 use heavenly_geo::{earth, Ellipsoid, Geodetic};
-use heavenly_id::{Alias, Attitude, Entity, IdError, Kind, LocationId, Mount, Registry};
+use heavenly_id::{
+    Alias, Attitude, Entity, IdError, Kind, LocationId, MemoryRegistry, Mount, Registry,
+};
 use heavenly_orbit::{gm, ConicElements, TwoBodyLocator};
 
 fn epoch() -> Epoch {
@@ -51,7 +53,7 @@ fn site_mount() -> Mount {
 
 #[test]
 fn aliases_are_separate_from_identity() {
-    let mut reg = Registry::new(Namespace(7)).unwrap();
+    let mut reg = MemoryRegistry::new(Namespace(7)).unwrap();
     let a = reg
         .add(Entity::new(
             LocationId(1),
@@ -116,8 +118,8 @@ fn aliases_are_separate_from_identity() {
 
 #[test]
 fn frames_are_derived_from_ids() {
-    let mut r1 = Registry::new(Namespace(7)).unwrap();
-    let mut r2 = Registry::new(Namespace(7)).unwrap();
+    let mut r1 = MemoryRegistry::new(Namespace(7)).unwrap();
+    let mut r2 = MemoryRegistry::new(Namespace(7)).unwrap();
     let id = LocationId(0xdead_beef_0000_1111_2222_3333_4444_5555);
     r1.add(Entity::new(id, Kind::Rack, "a", site_mount()))
         .unwrap();
@@ -134,7 +136,7 @@ fn frames_are_derived_from_ids() {
     assert_eq!(r1.frame_of(id).unwrap().namespace(), Namespace(7));
 
     // Two IDs that fold to the same code are rejected rather than aliased.
-    let mut r = Registry::new(Namespace(7)).unwrap();
+    let mut r = MemoryRegistry::new(Namespace(7)).unwrap();
     r.add(Entity::new(LocationId(1), Kind::Rack, "a", site_mount()))
         .unwrap();
     assert!(matches!(
@@ -146,12 +148,12 @@ fn frames_are_derived_from_ids() {
         )),
         Err(IdError::FrameCollision { .. })
     ));
-    assert!(Registry::new(Namespace::HEAVENLY).is_err());
+    assert!(MemoryRegistry::new(Namespace::HEAVENLY).is_err());
 }
 
 #[test]
 fn hierarchy_errors_are_explicit() {
-    let mut reg = Registry::new(Namespace(7)).unwrap();
+    let mut reg = MemoryRegistry::new(Namespace(7)).unwrap();
     let region = reg
         .add(Entity::new(
             LocationId(1),
@@ -213,8 +215,8 @@ fn hierarchy_errors_are_explicit() {
 }
 
 /// Site → building (rotated 30°) → room (rotated 90°) → rack → device.
-fn data_centre() -> (Registry, [LocationId; 5]) {
-    let mut reg = Registry::new(Namespace(7)).unwrap();
+fn data_centre() -> (MemoryRegistry, [LocationId; 5]) {
+    let mut reg = MemoryRegistry::new(Namespace(7)).unwrap();
     let rz = |deg: f64| Rotation::from_axis_angle(Vec3::Z, deg.to_radians());
     let site = reg
         .add(Entity::new(
@@ -271,8 +273,8 @@ fn nested_frames_compose_exactly() {
     let names: Vec<_> = reg
         .path(device)
         .unwrap()
-        .iter()
-        .map(|e| e.name.as_str())
+        .into_iter()
+        .map(|e| e.name.clone())
         .collect();
     assert_eq!(
         names,
@@ -285,7 +287,11 @@ fn nested_frames_compose_exactly() {
         ]
     );
     assert_eq!(
-        reg.children(room).iter().map(|e| e.id).collect::<Vec<_>>(),
+        reg.children(room)
+            .unwrap()
+            .iter()
+            .map(|e| e.id)
+            .collect::<Vec<_>>(),
         [rack]
     );
 
@@ -344,7 +350,7 @@ fn iss(start: Epoch) -> TwoBodyLocator {
     }
 }
 
-fn spacecraft(reg: &mut Registry, start: Epoch) -> (LocationId, LocationId, LocationId) {
+fn spacecraft(reg: &mut MemoryRegistry, start: Epoch) -> (LocationId, LocationId, LocationId) {
     let orbit = iss(start);
     let craft = reg
         .add(Entity::new(
@@ -384,7 +390,7 @@ fn spacecraft(reg: &mut Registry, start: Epoch) -> (LocationId, LocationId, Loca
 #[test]
 fn lvlh_spacecraft_frames() {
     let start = epoch();
-    let mut reg = Registry::new(Namespace(7)).unwrap();
+    let mut reg = MemoryRegistry::new(Namespace(7)).unwrap();
     let (craft, module, _) = spacecraft(&mut reg, start);
     let mut graph = FrameGraph::new();
     reg.register_frames(&mut graph).unwrap();
@@ -452,7 +458,7 @@ fn design_doc_scenario_london_rack_to_orbiting_rack() {
 
 #[test]
 fn trajectory_errors_propagate() {
-    let mut reg = Registry::new(Namespace(7)).unwrap();
+    let mut reg = MemoryRegistry::new(Namespace(7)).unwrap();
     reg.add(Entity::new(
         LocationId(1),
         Kind::Spacecraft,
@@ -475,5 +481,138 @@ fn trajectory_errors_propagate() {
     assert!(matches!(
         reg.locate(LocationId(1), epoch(), FrameId::GCRF, &graph),
         Err(IdError::Core(Error::OutsideCoverage { .. }))
+    ));
+}
+
+/// A read-only store with its own error type, standing in for a database or
+/// an inventory service.
+struct Snapshot {
+    entities: std::collections::HashMap<LocationId, Entity>,
+    aliases: std::collections::HashMap<String, LocationId>,
+    offline: bool,
+}
+
+#[derive(Debug, PartialEq)]
+enum StoreError {
+    Offline,
+    Registry(IdError),
+}
+
+impl From<IdError> for StoreError {
+    fn from(e: IdError) -> Self {
+        StoreError::Registry(e)
+    }
+}
+
+impl Registry for Snapshot {
+    type Error = StoreError;
+    fn namespace(&self) -> Namespace {
+        Namespace(7)
+    }
+    fn entity(&self, id: LocationId) -> Result<Option<std::borrow::Cow<'_, Entity>>, StoreError> {
+        if self.offline {
+            return Err(StoreError::Offline);
+        }
+        // Owned, as a store that deserialises its rows would return them.
+        Ok(self.entities.get(&id).cloned().map(std::borrow::Cow::Owned))
+    }
+    fn lookup_alias(&self, alias: &Alias) -> Result<Option<LocationId>, StoreError> {
+        Ok(self.aliases.get(alias.as_str()).copied())
+    }
+    fn for_each_entity(
+        &self,
+        f: &mut dyn FnMut(&Entity) -> Result<(), StoreError>,
+    ) -> Result<(), StoreError> {
+        self.entities.values().try_for_each(f)
+    }
+}
+
+fn snapshot_of(reg: &MemoryRegistry) -> Snapshot {
+    Snapshot {
+        entities: reg.entities().map(|e| (e.id, e.clone())).collect(),
+        aliases: reg
+            .entities()
+            .flat_map(|e| {
+                reg.aliases_of(e.id)
+                    .into_iter()
+                    .map(move |a| (a.as_str().to_string(), e.id))
+            })
+            .collect(),
+        offline: false,
+    }
+}
+
+#[test]
+fn any_store_behaves_like_the_memory_registry() {
+    let (reg, [_, _, room, _, device]) = data_centre();
+    let snap = snapshot_of(&reg);
+    // Same frames: they depend only on the namespace and the ID.
+    for e in reg.entities() {
+        assert_eq!(reg.frame_of(e.id).ok(), snap.frame_of(e.id).ok());
+    }
+    assert_eq!(
+        reg.id_of("dc:lhr:01/hall-2/rack-07/u33"),
+        snap.id_of("dc:lhr:01/hall-2/rack-07/u33")
+            .map_err(|_| IdError::UnknownId(device))
+    );
+    let mut kids: Vec<_> = snap.children(room).unwrap().iter().map(|e| e.id).collect();
+    kids.sort();
+    assert_eq!(
+        kids,
+        reg.children(room)
+            .unwrap()
+            .iter()
+            .map(|e| e.id)
+            .collect::<Vec<_>>()
+    );
+
+    // Same positions, through each store's own frame-graph edges.
+    let (mut g1, mut g2) = (FrameGraph::new(), FrameGraph::new());
+    for (g, r) in [(&mut g1, true), (&mut g2, false)] {
+        earth::register(g, earth::EarthOrientation::ZERO).unwrap();
+        if r {
+            reg.register_frames(g).unwrap();
+        } else {
+            snap.register_frames(g).unwrap();
+        }
+    }
+    let a = reg.locate(device, epoch(), FrameId::GCRF, &g1).unwrap();
+    let b = snap.locate(device, epoch(), FrameId::GCRF, &g2).unwrap();
+    assert_eq!(a, b);
+
+    // Store errors come through as themselves; registry errors are wrapped.
+    assert_eq!(
+        snap.id_of(LocationId(12345)),
+        Err(StoreError::Registry(IdError::UnknownId(LocationId(12345))))
+    );
+    let down = Snapshot {
+        offline: true,
+        ..snapshot_of(&reg)
+    };
+    assert_eq!(down.frame_of(device), Err(StoreError::Offline));
+}
+
+#[test]
+fn validation_catches_frame_collisions_in_any_store() {
+    // The memory registry refuses colliding IDs on insert; another store can
+    // only find them when validating. These two fold to the same code.
+    let a = LocationId(1);
+    let b = LocationId(1u128 << 64); // high word 1, low word 0: also folds to 1
+    let mount = Mount::Geodetic {
+        body_fixed: FrameId::ITRF,
+        ellipsoid: Ellipsoid::WGS84,
+        position: Geodetic::from_degrees(0.0, 0.0, 0.0).unwrap(),
+    };
+    let snap = Snapshot {
+        entities: [a, b]
+            .into_iter()
+            .map(|id| (id, Entity::new(id, Kind::Site, "s", mount.clone())))
+            .collect(),
+        aliases: Default::default(),
+        offline: false,
+    };
+    assert!(matches!(
+        snap.validate(),
+        Err(StoreError::Registry(IdError::FrameCollision { .. }))
     ));
 }
