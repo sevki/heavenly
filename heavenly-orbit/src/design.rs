@@ -88,9 +88,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "alloc")]
     fn walker_delta_layout() {
         let e = Epoch::J2000;
-        let w: Vec<_> = walker_delta(24, 3, 1, 1.0, 7e6, 0.0, e).unwrap().collect();
+        let w: alloc::vec::Vec<_> = walker_delta(24, 3, 1, 1.0, 7e6, 0.0, e).unwrap().collect();
         assert_eq!(w.len(), 24);
         let tau = core::f64::consts::TAU;
         // Planes 120° apart; 8 per plane, 45° apart; 15° phase per plane.
