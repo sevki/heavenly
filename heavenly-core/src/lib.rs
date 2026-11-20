@@ -60,6 +60,8 @@ mod math;
 mod state;
 pub mod time;
 pub mod transform;
+#[cfg(feature = "jetstream")]
+pub mod wire;
 
 pub use error::Error;
 pub use frame::{

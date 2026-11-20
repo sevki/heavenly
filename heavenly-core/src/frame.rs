@@ -33,6 +33,14 @@ macro_rules! well_known {
         impl FrameId {
             $( $(#[$doc])* pub const $name: FrameId = FrameId { namespace: Namespace::HEAVENLY, code: $code }; )*
 
+            /// The well-known frame with this label, e.g. `"GCRF"`.
+            pub fn well_known(name: &str) -> Option<FrameId> {
+                match name {
+                    $( $label => Some(FrameId::$name), )*
+                    _ => None,
+                }
+            }
+
             /// Short label of a well-known frame, if this is one.
             pub const fn well_known_name(self) -> Option<&'static str> {
                 if self.namespace.0 != Namespace::HEAVENLY.0 {
@@ -81,12 +89,62 @@ impl FrameId {
         }
     }
 
+    /// Parses the output of `Display`: a well-known label such as `GCRF`,
+    /// or `namespace:code` (e.g. `7:1001`) for a custom frame.
+    ///
+    /// The bare name `ICRF` is rejected on purpose. It names a set of axes
+    /// but not an origin, so use `SSB_ICRF` (barycentric) or `GCRF`
+    /// (geocentric).
+    pub fn parse(s: &str) -> Result<FrameId, crate::Error> {
+        if let Some(f) = FrameId::well_known(s) {
+            return Ok(f);
+        }
+        if s.eq_ignore_ascii_case("ICRF") || s.eq_ignore_ascii_case("J2000") {
+            return Err(crate::Error::Parse(
+                "ambiguous frame: ICRF/J2000 name axes, not an origin; use SSB_ICRF or GCRF",
+            ));
+        }
+        let (ns, code) = s.split_once(':').ok_or(crate::Error::Parse(
+            "unknown frame name (expected a well-known label or namespace:code)",
+        ))?;
+        let ns: u32 = ns
+            .parse()
+            .map_err(|_| crate::Error::Parse("frame namespace is not a u32"))?;
+        let code: i64 = code
+            .parse()
+            .map_err(|_| crate::Error::Parse("frame code is not an i64"))?;
+        if ns == Namespace::HEAVENLY.0 {
+            return FrameId::well_known_code(code).ok_or(crate::Error::Parse(
+                "unknown code in the HEAVENLY namespace",
+            ));
+        }
+        Ok(FrameId {
+            namespace: Namespace(ns),
+            code,
+        })
+    }
+
+    fn well_known_code(code: i64) -> Option<FrameId> {
+        let f = FrameId {
+            namespace: Namespace::HEAVENLY,
+            code,
+        };
+        f.well_known_name().map(|_| f)
+    }
+
     pub const fn namespace(self) -> Namespace {
         self.namespace
     }
 
     pub const fn code(self) -> i64 {
         self.code
+    }
+}
+
+impl core::str::FromStr for FrameId {
+    type Err = crate::Error;
+    fn from_str(s: &str) -> Result<FrameId, crate::Error> {
+        FrameId::parse(s)
     }
 }
 

@@ -34,6 +34,10 @@ orbit = ["dep:heavenly-orbit"]
 id = ["alloc", "geo", "dep:heavenly-id"]
 query = ["dep:heavenly-query"]
 topology = ["alloc", "dep:heavenly-topology"]
+# Compact binary encoding of the core types with jetstream's `WireFormat`
+# (`heavenly::wire`). Off by default: needs std, Rust 1.91+, and jetstream's
+# dependencies.
+jetstream = ["std", "heavenly-core/jetstream"]
 
 [dependencies]
 heavenly-core = { version = "0.5.0", path = "../heavenly-core", default-features = false }

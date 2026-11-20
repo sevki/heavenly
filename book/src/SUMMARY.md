@@ -18,6 +18,7 @@
 - [Placement topology](topology.md)
 - [Playground](playground.md)
 - [`no_std` and features](no-std.md)
+- [Wire format](wire.md)
 
 # Project
 

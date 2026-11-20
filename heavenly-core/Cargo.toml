@@ -15,6 +15,11 @@ default = ["std"]
 std = ["alloc"]
 # Enables the heap-backed `FrameGraph` resolver.
 alloc = []
+# Compact binary encoding via jetstream's `WireFormat` (see `wire`). Needs
+# std and a recent toolchain (jetstream's own MSRV, currently Rust 1.91),
+# and adds jetstream's dependencies, so it is off by default.
+jetstream = ["std", "dep:jetstream_wireformat"]
 
 [dependencies]
 libm = "0.2"
+jetstream_wireformat = { version = "16.3.1", default-features = false, features = ["std"], optional = true }

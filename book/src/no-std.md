@@ -18,6 +18,7 @@ heavenly = { git = "https://github.com/sevki/heavenly", default-features = false
 | `spice` | yes | `heavenly::spice`; kernels are held in memory | yes |
 | `id` | yes | `heavenly::id` (implies `geo`) | yes |
 | `topology` | yes | `heavenly::topology` | yes |
+| `jetstream` | **no** | `heavenly::wire`: compact binary encoding ([Wire format](wire.md)) | yes (std) |
 
 Without `std`, `heavenly::spice` still reads kernels: load the bytes
 yourself and use `Spk::from_bytes` / `Pck::from_bytes`.
@@ -26,4 +27,6 @@ CI builds every module for two bare-metal targets, `thumbv7em-none-eabihf`
 (Cortex-M) and `riscv32imac-unknown-none-elf`, with and without `alloc`, so
 `no_std` support is tested.
 
-The minimum supported Rust version is **1.70**, and CI checks it.
+The minimum supported Rust version is **1.70** for every feature except
+`jetstream`, which needs what jetstream itself needs (currently Rust 1.91).
+CI checks both.

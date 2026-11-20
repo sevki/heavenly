@@ -4,6 +4,20 @@ All crates in the workspace share one version. The minor version increases
 with each roadmap milestone (M1 = 0.1, M2 = 0.2, …); patch releases fix bugs
 within a milestone. Before 1.0, a minor bump may break the API.
 
+## Unreleased
+
+### Added
+- Optional `jetstream` feature (off by default): `heavenly::wire` implements
+  [jetstream](https://github.com/sevki/jetstream)'s `WireFormat` for
+  `Epoch`, `FrameId`, `LocationId`, `Vec3`, `Rotation`, `Transform` and
+  `StateVector`. Each type has a fixed little-endian layout (a state is
+  77 bytes) and decoding validates its input. The feature needs std and
+  jetstream's toolchain (Rust 1.91). Default builds keep the 1.70 MSRV and
+  their libm-only dependencies.
+- `FrameId::parse` / `FromStr` (the inverse of `Display`). It rejects the
+  ambiguous bare `ICRF` / `J2000`.
+- `LocationId::hyphenated()`: the canonical UUID form.
+
 ## 0.5.0: M5, spatial and operational queries
 
 ### Changed
