@@ -25,6 +25,10 @@
 //! | [`query`] | `query` | light time, look angles, line of sight, visibility windows |
 //! | [`topology`] | `topology` | failure domains and jurisdictions (policy, not coordinates) |
 //!
+//! With the off-by-default `jetstream` feature, `heavenly::wire` encodes the
+//! core types in a compact, fixed-size binary form using
+//! [jetstream](https://github.com/sevki/jetstream)'s `WireFormat`.
+//!
 //! For `no_std`, use `default-features = false` and enable what you need:
 //! the core and most modules are allocation-free, and `alloc` adds the
 //! frame graph and other heap-backed types.

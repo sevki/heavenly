@@ -22,6 +22,27 @@ impl LocationId {
         LocationId(u128::from_be_bytes(b))
     }
 
+    /// The canonical hyphenated UUID form, e.g.
+    /// `6f1c0b4e-2a43-4f8e-9d1b-5c0e7a3b9f12`.
+    pub fn hyphenated(self) -> impl fmt::Display {
+        struct H(u128);
+        impl fmt::Display for H {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                let v = self.0;
+                write!(
+                    f,
+                    "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
+                    (v >> 96) as u32,
+                    (v >> 80) as u16,
+                    (v >> 64) as u16,
+                    (v >> 48) as u16,
+                    v & 0xffff_ffff_ffff
+                )
+            }
+        }
+        H(self.0)
+    }
+
     /// Parses 32 hexadecimal digits, optionally hyphenated as a UUID
     /// (`8-4-4-4-12`). Case-insensitive. This accepts the output of both
     /// `Display` and a UUID's canonical form.

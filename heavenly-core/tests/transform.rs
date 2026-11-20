@@ -384,3 +384,25 @@ fn location_id_parsing() {
         assert!(LocationId::parse(bad).is_err(), "{bad}");
     }
 }
+
+#[test]
+fn frame_id_and_hyphenated_id_round_trip() {
+    for f in [
+        FrameId::GCRF,
+        FrameId::SSB_ICRF,
+        FrameId::MOON_ME,
+        custom(5),
+        FrameId::custom(Namespace(7), -3).unwrap(),
+    ] {
+        assert_eq!(f.to_string().parse::<FrameId>(), Ok(f));
+    }
+    assert_eq!(FrameId::parse("0:2"), Ok(FrameId::GCRF));
+    for bad in ["ICRF", "icrf", "J2000", "GCRS?", "7", "x:1", "7:y", "0:999"] {
+        assert!(FrameId::parse(bad).is_err(), "{bad}");
+    }
+    assert!(matches!(FrameId::parse("ICRF"), Err(Error::Parse(m)) if m.contains("SSB_ICRF")));
+    let id = LocationId(0x6f1c0b4e_2a43_4f8e_9d1b_5c0e7a3b9f12);
+    let h = id.hyphenated().to_string();
+    assert_eq!(h, "6f1c0b4e-2a43-4f8e-9d1b-5c0e7a3b9f12");
+    assert_eq!(LocationId::parse(&h), Ok(id));
+}
