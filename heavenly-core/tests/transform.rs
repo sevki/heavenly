@@ -346,3 +346,21 @@ fn frame_ids() {
         "00000000000000000000000000000abc"
     );
 }
+
+#[test]
+fn rotation_from_matrix_round_trips() {
+    let mut g = Lcg(9);
+    for i in 0..500 {
+        // Include angles near π, where the trace pivot is not used.
+        let angle = if i % 2 == 0 {
+            g.f() * 3.0
+        } else {
+            core::f64::consts::PI - g.f().abs() * 1e-3
+        };
+        let r = Rotation::from_axis_angle(g.v(1.0), angle);
+        let back = Rotation::from_matrix(r.to_matrix()).unwrap();
+        let v = g.v(1.0);
+        assert!(close(r.apply(v), back.apply(v), 1e-14));
+    }
+    assert!(Rotation::from_matrix([[f64::NAN; 3]; 3]).is_none());
+}

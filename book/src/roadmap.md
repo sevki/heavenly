@@ -3,7 +3,7 @@
 | Milestone | Crates | Status |
 |-----------|--------|--------|
 | **M1** Core types and invariants | `heavenly-core` | ✅ done |
-| **M2** Earth and Moon | `heavenly-geo`, `heavenly-spice` | planned |
+| **M2** Earth and Moon | `heavenly-geo`, `heavenly-spice` | ✅ done |
 | **M3** Moving objects | `heavenly-orbit` | planned |
 | **M4** Local frames and identity | `heavenly-id` | planned |
 | **M5** Spatial and operational queries | `heavenly-topology` | planned |

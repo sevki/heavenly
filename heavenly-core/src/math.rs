@@ -230,6 +230,50 @@ impl Rotation {
         .renormalized()
     }
 
+    /// Builds a rotation from a row-major 3×3 matrix `m` such that the
+    /// rotated vector is `m · v`.
+    ///
+    /// The matrix should be orthonormal with determinant +1; the nearest
+    /// unit quaternion is returned. Returns `None` for non-finite input.
+    pub fn from_matrix(m: [[f64; 3]; 3]) -> Option<Rotation> {
+        // Shepperd's method: pick the numerically largest pivot.
+        let trace = m[0][0] + m[1][1] + m[2][2];
+        let (w, x, y, z) = if trace > 0.0 {
+            let s = libm::sqrt(trace + 1.0) * 2.0;
+            (
+                0.25 * s,
+                (m[2][1] - m[1][2]) / s,
+                (m[0][2] - m[2][0]) / s,
+                (m[1][0] - m[0][1]) / s,
+            )
+        } else if m[0][0] > m[1][1] && m[0][0] > m[2][2] {
+            let s = libm::sqrt(1.0 + m[0][0] - m[1][1] - m[2][2]) * 2.0;
+            (
+                (m[2][1] - m[1][2]) / s,
+                0.25 * s,
+                (m[0][1] + m[1][0]) / s,
+                (m[0][2] + m[2][0]) / s,
+            )
+        } else if m[1][1] > m[2][2] {
+            let s = libm::sqrt(1.0 + m[1][1] - m[0][0] - m[2][2]) * 2.0;
+            (
+                (m[0][2] - m[2][0]) / s,
+                (m[0][1] + m[1][0]) / s,
+                0.25 * s,
+                (m[1][2] + m[2][1]) / s,
+            )
+        } else {
+            let s = libm::sqrt(1.0 + m[2][2] - m[0][0] - m[1][1]) * 2.0;
+            (
+                (m[1][0] - m[0][1]) / s,
+                (m[0][2] + m[2][0]) / s,
+                (m[1][2] + m[2][1]) / s,
+                0.25 * s,
+            )
+        };
+        Rotation::from_quaternion(w, x, y, z)
+    }
+
     /// Row-major 3×3 rotation matrix.
     pub fn to_matrix(self) -> [[f64; 3]; 3] {
         let c = |v| self.apply(v);

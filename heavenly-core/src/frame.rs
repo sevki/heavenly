@@ -60,6 +60,9 @@ well_known! {
     MOON_PA = 11, "MOON_PA";
     /// Origin: Moon centre of mass. Axes: lunar mean-Earth / polar axes (ME).
     MOON_ME = 12, "MOON_ME";
+    /// Origin: Moon centre of mass. Axes: IAU/WGCCRE Moon body-fixed model.
+    /// Differs from the DE440 [`FrameId::MOON_ME`] by up to ≈150 m at the surface.
+    MOON_IAU = 13, "MOON_IAU";
     /// Origin: Mars centre of mass. Axes: ICRF.
     MARS_ICRF = 20, "MARS_ICRF";
     /// Origin: Mars centre of mass. Axes: IAU Mars body-fixed.

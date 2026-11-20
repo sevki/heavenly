@@ -16,7 +16,7 @@ compares two positions unless they share a frame and an epoch.
 
 ## What exists today
 
-The project is at milestone **M1**. The `heavenly-core` crate provides:
+Milestones **M1** and **M2** are complete. The `heavenly-core` crate provides:
 
 | Type | Purpose |
 |------|---------|
@@ -26,6 +26,12 @@ The project is at milestone **M1**. The `heavenly-core` crate provides:
 | `StateVector`, `Coordinate<F>` | Position + velocity in a frame at an epoch |
 | [`FrameGraph`](graph.md) | Resolves transforms between any connected frames |
 | `Locator`, `LocationId` | Stable identity and a way to find it at any epoch |
+
+`heavenly-geo` adds ellipsoids, geodetic coordinates, Earth orientation
+(ITRF ↔ GCRF) and IAU Moon/Mars models. See
+[Earth, Moon and Mars](earth-and-moon.md). `heavenly-spice` reads JPL
+ephemerides and lunar orientation from SPICE kernels. See
+[Ephemerides](spice.md).
 
 See the [roadmap](roadmap.md) for what comes next, and the
 [design proposal](design.md) for the full rationale.

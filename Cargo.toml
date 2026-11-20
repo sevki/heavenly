@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["heavenly-core"]
+members = ["heavenly-core", "heavenly-geo", "heavenly-spice"]
 
 [workspace.package]
 edition = "2021"
