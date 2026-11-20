@@ -261,6 +261,28 @@ fn graph_errors_are_explicit() {
 }
 
 #[test]
+fn edges_can_be_removed_and_replaced() {
+    let mut frames = FrameGraph::new();
+    let (site, base) = (custom(20), custom(21));
+    let at = |x: f64| Transform {
+        translation_m: Vec3::new(x, 0.0, 0.0),
+        ..Transform::IDENTITY
+    };
+    frames.add_fixed(site, base, at(1.0)).unwrap();
+    // Either direction names the edge; a second removal finds nothing.
+    assert!(frames.remove_edge(base, site));
+    assert!(!frames.remove_edge(site, base));
+    assert!(matches!(
+        frames.transform(site, base, Epoch::J2000),
+        Err(Error::NoPath { .. })
+    ));
+    // The frame can then be put somewhere else.
+    frames.add_fixed(site, base, at(5.0)).unwrap();
+    let t = frames.transform(site, base, Epoch::J2000).unwrap();
+    assert_eq!(t.transform.translation_m, Vec3::new(5.0, 0.0, 0.0));
+}
+
+#[test]
 fn frame_transform_checks_labels() {
     let e = Epoch::J2000;
     let ab = FrameTransform {

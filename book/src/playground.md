@@ -11,19 +11,28 @@ draw with WebGL2. Only the drawing is JavaScript.
 * **Earth's rotation**: `heavenly::geo` turns GCRF into ITRF at every frame
   (IAU 2006 precession, nutation and the Earth Rotation Angle). That is why
   the graticule turns and the ground track drifts west on each orbit.
-* **London's view**: a `FrameGraph` resolves the satellite into an
-  east-north-up frame at the site, which gives elevation, azimuth and range.
+* **The ground station's view**: a `FrameGraph` resolves the satellite into
+  an east-north-up frame at the station, which gives elevation, azimuth and
+  range. The tabs move the station: London, any of the data centres, or your
+  location. Choosing a tab replaces one fixed edge in the graph
+  (`FrameGraph::remove_edge`, then `add_fixed`).
 * **Sunlight**: `heavenly::query` places the Sun (`AnalyticSun`) and the
   Earth's shadow (`Occulter::shadow`). The orbit and the ground track turn
   grey where the satellite is in the Earth's shadow, and the map shades the
   night side.
-* **Passes**: `find_windows` lists the passes over London. A pass is
+* **Passes**: `find_windows` lists the passes over the station. A pass is
   visible where the satellite is sunlit while the Sun is more than 6° below
-  London's horizon.
+  the station's horizon.
 * **Data centres**: the squares are Apple's own data centres (Maiden,
   Prineville, Reno, Mesa, Waukee, Viborg) at city-level, approximate
   coordinates. A square turns orange while the satellite is more than 10°
   above its horizon.
+* **Live**: time follows your clock at real speed. A slider orbit moves its
+  epoch to now. A TLE keeps its epoch, and SGP4 propagates it to now.
+
+**Your location** uses your browser's Geolocation API. The browser asks you
+first. The position is used only in this page and is sent nowhere. Nothing
+on this page calls an external service.
 
 <div id="hv-play" data-land="playground/land-110m.json"><noscript>The playground needs JavaScript and WebGL2.</noscript></div>
 <script type="module" src="playground/app.js"></script>
@@ -67,6 +76,14 @@ draw with WebGL2. Only the drawing is JavaScript.
   night, so every night pass is visible. Its eclipses (dashed on the map)
   shrink from 13 minutes to nothing within a day, as the orbit turns to
   face the Sun. Paste a current TLE to see today's.
+* **Where is it now?** Paste a current TLE (CelesTrak publishes one for the
+  ISS several times a day), then press **Live**. The map then shows where
+  the satellite is now, and the pass table lists the next two days' passes
+  from the station tab you have chosen. Try **Your location** to see when it
+  passes over you.
+* **Data centre tabs**: with **Orbital data centre**, switch between Viborg
+  and Mesa. The 550 km dawn–dusk orbit passes over each a few times a day,
+  at different times, and every pass is in sunlight.
 
 ## What it does not model
 

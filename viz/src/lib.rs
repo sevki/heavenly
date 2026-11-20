@@ -52,7 +52,8 @@ pub const ISS_TLE: &str = "1 25544U 98067A   20194.88612269 -.00002218  00000-0 
 /// Equatorial radius used for altitudes (WGS84), in metres.
 pub const EARTH_RADIUS_M: f64 = 6_378_137.0;
 
-/// The London ground station shown in the playground.
+/// The playground's default ground station, London. [`Model::set_station`]
+/// moves it.
 pub const LONDON: (f64, f64, f64) = (51.5072, -0.1276, 35.0);
 
 /// Demo ground sites drawn on the map: Apple's own data centres, at
@@ -131,6 +132,20 @@ impl Model {
         };
         m.set_orbit(420.0, 0.0005, 51.64, 0.0, 0.0, 0.0)?;
         Ok(m)
+    }
+
+    /// Moves the ground station (London by default) that elevations, passes
+    /// and the Sun's elevation are computed from. Latitude and longitude in
+    /// degrees, height above the WGS84 ellipsoid in metres. On an error the
+    /// station stays where it was.
+    pub fn set_station(&mut self, lat_deg: f64, lon_deg: f64, height_m: f64) -> Result<(), Error> {
+        let site = Geodetic::from_degrees(lat_deg, lon_deg, height_m)?;
+        self.graph.remove_edge(self.station, FrameId::ITRF);
+        self.graph.add_fixed(
+            self.station,
+            FrameId::ITRF,
+            site.enu_to_body_fixed(&Ellipsoid::WGS84),
+        )
     }
 
     /// Sets the epoch from UTC calendar fields (seconds may be fractional).
@@ -387,10 +402,10 @@ impl Model {
 
     /// The state `t_s` seconds after the epoch:
     /// `[x, y, z (km, GCRF), vx, vy, vz (km/s), lat °, lon °, alt km,
-    ///   london elevation °, london azimuth °, london range km,
+    ///   station elevation °, station azimuth °, station range km,
     ///   earth rotation angle °, periapsis x, y, z (km, GCRF),
     ///   sunlit fraction, shadow (0 sunlit, 1 penumbra, 2 umbra, 3 antumbra),
-    ///   Sun elevation at London °, subsolar latitude °, subsolar longitude °,
+    ///   Sun elevation at the station °, subsolar latitude °, subsolar longitude °,
     ///   Sun direction x, y, z (unit, GCRF)]`.
     pub fn state(&self, t_s: f64) -> Result<Vec<f64>, Error> {
         let epoch = self.at(t_s)?;
@@ -515,10 +530,10 @@ impl Model {
         Ok(out)
     }
 
-    /// Passes over London above 10° between `t0_s` and `t1_s`, as rows
+    /// Passes over the station above 10° between `t0_s` and `t1_s`, as rows
     /// `[start s, end s, max elevation °, visible s]`. A moment is visible
-    /// when the satellite is sunlit and the Sun is more than 6° below
-    /// London's horizon.
+    /// when the satellite is sunlit and the Sun is more than 6° below the
+    /// station's horizon.
     pub fn passes(&self, t0_s: f64, t1_s: f64) -> Result<Vec<f64>, Error> {
         let (t0, t1) = (self.at(t0_s)?, self.at(t1_s)?);
         let mask = 10f64.to_radians();
@@ -558,7 +573,7 @@ impl Model {
     }
 
     /// Sub-satellite points from `t0_s` to `t1_s` (seconds after the epoch),
-    /// `n` samples of `[lat °, lon °, london elevation °, sunlit fraction]`.
+    /// `n` samples of `[lat °, lon °, station elevation °, sunlit fraction]`.
     pub fn ground_track(&self, t0_s: f64, t1_s: f64, n: usize) -> Result<Vec<f64>, Error> {
         let mut out = Vec::with_capacity(4 * n);
         for k in 0..n {
@@ -661,6 +676,12 @@ mod bindings {
             self.model.set_tle(text).map_err(js)
         }
 
+        /// Moves the ground station: latitude, longitude (°), height (m).
+        #[wasm_bindgen(js_name = setStation)]
+        pub fn set_station(&mut self, lat: f64, lon: f64, height_m: f64) -> Result<(), JsError> {
+            self.model.set_station(lat, lon, height_m).map_err(js)
+        }
+
         #[wasm_bindgen(js_name = epochFields)]
         pub fn epoch_fields(&self) -> Result<Vec<f64>, JsError> {
             self.model.epoch_fields().map_err(js)
@@ -753,12 +774,11 @@ mod tests {
         assert!((-90.0..=90.0).contains(&s[9]) && s[11] > 0.0);
     }
 
-    #[test]
-    fn london_elevation_matches_direct_geometry() {
-        let m = Model::new().unwrap();
-        let s = m.state(1234.0).unwrap();
-        // Recompute elevation from ITRF positions directly.
-        let site = Geodetic::from_degrees(LONDON.0, LONDON.1, LONDON.2).unwrap();
+    // Elevation of the satellite at `t` from (lat, lon, h), recomputed from
+    // ITRF positions directly.
+    fn direct_elevation(m: &Model, t: f64, (lat, lon, h): (f64, f64, f64)) -> f64 {
+        let s = m.state(t).unwrap();
+        let site = Geodetic::from_degrees(lat, lon, h).unwrap();
         let sat = Geodetic::from_degrees(s[6], s[7], s[8] * 1e3)
             .unwrap()
             .to_cartesian(&Ellipsoid::WGS84);
@@ -767,8 +787,33 @@ mod tests {
             .enu_to_body_fixed(&Ellipsoid::WGS84)
             .rotation
             .apply(Vec3::Z);
-        let el = (d.dot(up) / d.norm()).asin().to_degrees();
+        (d.dot(up) / d.norm()).asin().to_degrees()
+    }
+
+    #[test]
+    fn station_elevation_matches_direct_geometry() {
+        let mut m = Model::new().unwrap();
+        let el = direct_elevation(&m, 1234.0, LONDON);
+        let s = m.state(1234.0).unwrap();
         assert!((el - s[9]).abs() < 1e-6, "{el} vs {}", s[9]);
+
+        // Moved to Viborg, the look angles, the track and the passes follow.
+        let viborg = (SITES[5].1, SITES[5].2, 0.0);
+        let before = m.passes(0.0, 86400.0).unwrap();
+        m.set_station(viborg.0, viborg.1, viborg.2).unwrap();
+        let el = direct_elevation(&m, 1234.0, viborg);
+        let s = m.state(1234.0).unwrap();
+        assert!((el - s[9]).abs() < 1e-6, "{el} vs {}", s[9]);
+        let track = m.ground_track(1234.0, 1234.0, 1).unwrap();
+        assert!((track[2] - el).abs() < 1e-6);
+        assert_ne!(before, m.passes(0.0, 86400.0).unwrap());
+        // The elevation from Viborg agrees with the site list's.
+        let k = 5;
+        assert!((m.site_view(1234.0).unwrap()[k] - el).abs() < 1e-6);
+
+        // An invalid station is refused and the old one stays.
+        assert!(m.set_station(91.0, 0.0, 0.0).is_err());
+        assert!((m.state(1234.0).unwrap()[9] - el).abs() < 1e-9);
     }
 
     #[test]

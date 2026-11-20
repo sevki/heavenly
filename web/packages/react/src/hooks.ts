@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Land } from "./draw.js";
-import { loadHeavenly, type Heavenly, type WasmSource } from "./wasm.js";
+import { loadHeavenly, type Heavenly, type Station, type WasmSource } from "./wasm.js";
 
 /**
  * Loads the WebAssembly module and returns a model, or `null` while it
@@ -27,6 +27,21 @@ export function useHeavenly(source?: WasmSource): { heavenly: Heavenly | null; e
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return { heavenly, error };
+}
+
+/**
+ * The device's position from the browser's Geolocation API, as a station.
+ * The browser asks the user first; the position stays in the page.
+ */
+export function currentPosition(name = "Your location"): Promise<Station> {
+  return new Promise((resolve, reject) => {
+    if (!("geolocation" in navigator)) return reject(new Error("this browser has no geolocation"));
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ name, lat: p.coords.latitude, lon: p.coords.longitude, heightM: p.coords.altitude ?? 0 }),
+      (e) => reject(new Error(e.code === e.PERMISSION_DENIED ? "location permission was denied" : `could not get the location (${e.message})`)),
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 },
+    );
+  });
 }
 
 /** Fetches coastlines (`{ rings }` JSON); `null` until loaded or if missing. */
@@ -56,13 +71,14 @@ export interface Clock {
 
 /**
  * Simulation time that advances at `speed` × real time while playing, and
- * wraps to 0 after `span` seconds.
+ * wraps back to `start` after `span` seconds. With `speed` 1 it keeps pace
+ * with the wall clock.
  */
-export function useClock(speed: number, span: number): Clock {
-  const [t, setT] = useState(0);
+export function useClock(speed: number, span: number, start = 0): Clock {
+  const [t, setT] = useState(start);
   const [playing, setPlaying] = useState(true);
-  const params = useRef({ speed, span });
-  params.current = { speed, span };
+  const params = useRef({ speed, span, start });
+  params.current = { speed, span, start };
   useEffect(() => {
     if (!playing) return;
     let last: number | null = null, id = 0;
@@ -70,8 +86,9 @@ export function useClock(speed: number, span: number): Clock {
       const dt = last === null ? 0 : (ts - last) / 1000;
       last = ts;
       setT((t0) => {
-        const t1 = t0 + dt * params.current.speed;
-        return t1 > params.current.span ? 0 : t1;
+        const { speed: k, span: n, start: s } = params.current;
+        const t1 = t0 + dt * k;
+        return t1 > s + n || t1 < s ? s : t1;
       });
       id = requestAnimationFrame(tick);
     };

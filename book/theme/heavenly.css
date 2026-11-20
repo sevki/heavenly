@@ -61,3 +61,20 @@
 .hv-passes tr.hv-vis td { color: #e8590c; }
 .hv-passes tr { cursor: pointer; }
 .hv-play:not(.hv-ready) .hv-canvases { opacity: 0.4; }
+.hv-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  border-bottom: 1px solid var(--table-border-color, rgba(127, 127, 127, 0.3));
+}
+.hv-tabs-label { font-size: 0.85em; color: var(--icons); margin-right: 6px; }
+.hv-play .hv-tabs button { border-bottom: none; border-radius: 5px 5px 0 0; margin-bottom: -1px; }
+.hv-play .hv-tabs button[aria-selected="true"] {
+  background: var(--bg);
+  border-bottom: 1px solid var(--bg);
+  color: #e8590c;
+  font-weight: 600;
+}
+.hv-play button.hv-live-on { color: #fff; background: #d6336c; border-color: #d6336c; }
